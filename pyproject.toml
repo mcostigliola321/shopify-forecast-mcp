@@ -20,7 +20,37 @@ classifiers = [
   "Topic :: Scientific/Engineering",
   "Topic :: Office/Business :: Financial",
 ]
-dependencies = []
+dependencies = [
+  "mcp>=1.27,<2.0",
+  "httpx>=0.27",
+  "pandas>=2.2",
+  "numpy>=1.26,<3",
+  "pydantic>=2.7",
+  "pydantic-settings>=2.3",
+  "holidays>=0.50",
+  "python-dateutil>=2.9",
+  "torch>=2.4",
+  "timesfm @ git+https://github.com/google-research/timesfm.git@f085b9079918092aa5e3917a4e135f87f91a7f03",
+]
+
+[project.optional-dependencies]
+gpu = []
+dev = [
+  "pytest>=8",
+  "pytest-asyncio>=0.24",
+  "respx>=0.22",
+  "ruff>=0.6",
+  "mypy>=1.11",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8",
+  "pytest-asyncio>=0.24",
+  "respx>=0.22",
+  "ruff>=0.6",
+  "mypy>=1.11",
+]
 
 [project.scripts]
 shopify-forecast      = "shopify_forecast_mcp.cli:main"
@@ -31,5 +61,36 @@ Homepage   = "https://github.com/omnialta/shopify-forecast-mcp"
 Repository = "https://github.com/omnialta/shopify-forecast-mcp"
 Issues     = "https://github.com/omnialta/shopify-forecast-mcp/issues"
 
+[tool.uv]
+default-groups = ["dev"]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/shopify_forecast_mcp"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+asyncio_mode = "strict"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --strict-config"
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
