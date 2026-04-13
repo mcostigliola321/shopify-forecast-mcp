@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "shopify-forecast-mcp"
+version = "0.1.0"
+description = "MCP server connecting Google TimesFM 2.5 to Shopify Admin GraphQL for forecasting, demand planning, and anomaly detection."
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Mark", email = "mark@omnialta.com" }]
+keywords = ["mcp", "shopify", "forecasting", "timesfm", "timeseries", "ecommerce"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Office/Business :: Financial",
+]
+dependencies = []
+
+[project.scripts]
+shopify-forecast      = "shopify_forecast_mcp.cli:main"
+shopify-forecast-mcp  = "shopify_forecast_mcp.mcp.server:main"
+
+[project.urls]
+Homepage   = "https://github.com/omnialta/shopify-forecast-mcp"
+Repository = "https://github.com/omnialta/shopify-forecast-mcp"
+Issues     = "https://github.com/omnialta/shopify-forecast-mcp/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/shopify_forecast_mcp"]
