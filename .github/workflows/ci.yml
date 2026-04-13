@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Smoke (Python 3.11, ${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Pin Python
+        run: uv python install 3.11
+
+      - name: Sync dependencies
+        run: uv sync --frozen
+
+      - name: Build wheel + sdist
+        run: uv build
+
+      - name: Import + config smoke test
+        env:
+          SHOPIFY_FORECAST_SHOP: test.myshopify.com
+          SHOPIFY_FORECAST_ACCESS_TOKEN: shpat_test
+        run: |
+          uv run python -c "from shopify_forecast_mcp.config import Settings; s = Settings(_env_file=None); print('ok', s.api_version)"
+
+      - name: Run pytest
+        env:
+          SHOPIFY_FORECAST_SHOP: test.myshopify.com
+          SHOPIFY_FORECAST_ACCESS_TOKEN: shpat_test
+        run: uv run pytest -x -q
+
+      - name: Upload built artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.os }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
