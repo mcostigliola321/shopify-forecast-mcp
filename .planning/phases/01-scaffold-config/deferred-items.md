@@ -1,0 +1,2 @@
+- [01-02] Missing `.gitignore` at repo root — Plan 01-01 should have created one. `__pycache__/`, `.venv/`, `.env`, etc. are currently untracked. Address in 01-03 or 01-04.
+- [01-02] Untracked `shopify-forecast-mcp-PRD.md` and `01-01-SUMMARY.md` at repo root / phase dir from earlier work — not owned by this plan.
