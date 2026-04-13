@@ -4,9 +4,9 @@ Living memory file. Updated at every phase transition.
 
 ## Current Status
 
-**Phase:** 1 — Scaffold & Packaging (in progress, 3/4 plans complete)
-**Last completed:** 01-03 Settings module (2026-04-13)
-**Next action:** Execute 01-04-PLAN.md
+**Phase:** 1 — Scaffold & Packaging (code complete, 4/4 plans; awaiting CI-green checkpoint)
+**Last completed:** 01-04 CI & repo hygiene (2026-04-13) — local pytest green, CI workflow committed
+**Next action:** User pushes to GitHub remote and confirms CI green (Plan 01-04 Task 3 checkpoint), then begin Phase 2
 
 ## Initialization
 
@@ -20,7 +20,7 @@ Living memory file. Updated at every phase transition.
 
 | Phase | Name | Status |
 |---|---|---|
-| 1 | Scaffold & Packaging | 🚧 In Progress (3/4) |
+| 1 | Scaffold & Packaging | 🚧 Awaiting CI-green checkpoint (4/4 code complete) |
 | 2 | Shopify Client | ⏳ Pending |
 | 3 | Time-series & Forecaster | ⏳ Pending |
 | 4 | MCP Server & CLI (MVP) | ⏳ Pending |
