@@ -5,9 +5,9 @@ Living memory file. Updated at every phase transition.
 ## Current Status
 
 **Phase:** 2 — Shopify Client (in progress)
-**Current Plan:** 2 of 4 complete
-**Last completed:** 02-02 Paginated orders fetch (2026-04-16)
-**Next action:** Execute 02-03-PLAN.md — Bulk operations
+**Current Plan:** 3 of 4 complete
+**Last completed:** 02-03 Bulk operations (2026-04-16)
+**Next action:** Execute 02-04-PLAN.md — Order normalization
 
 ## Initialization
 
@@ -22,7 +22,7 @@ Living memory file. Updated at every phase transition.
 | Phase | Name | Status |
 |---|---|---|
 | 1 | Scaffold & Packaging | ✅ Complete (CI green 2026-04-15) |
-| 2 | Shopify Client | 🔧 In Progress (2/4 plans) |
+| 2 | Shopify Client | 🔧 In Progress (3/4 plans) |
 | 3 | Time-series & Forecaster | ⏳ Pending |
 | 4 | MCP Server & CLI (MVP) | ⏳ Pending |
 | 5 | Analytics & Covariates | ⏳ Pending |
