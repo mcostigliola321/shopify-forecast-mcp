@@ -401,6 +401,51 @@ class ShopifyClient:
 
     # -- High-level helpers ---------------------------------------------------
 
+    async def fetch_orders_paginated(
+        self,
+        start_date: str,
+        end_date: str,
+        financial_status: str = "paid",
+    ) -> list[dict]:
+        """Fetch orders via cursor pagination. Best for <10k orders.
+
+        Returns raw order dicts from GraphQL (not yet normalized).
+        Includes full refund detail via refundLineItems.
+
+        Args:
+            start_date: ISO date string (YYYY-MM-DD)
+            end_date: ISO date string (YYYY-MM-DD)
+            financial_status: Shopify financial status filter (default: "paid")
+        """
+        query_filter = (
+            f"created_at:>='{start_date}' created_at:<='{end_date}' "
+            f"financial_status:{financial_status}"
+        )
+
+        orders: list[dict] = []
+        cursor: str | None = None
+        max_pages = 1000  # Safety counter: 1000 pages x 250 = 250k orders (T-02-06)
+
+        for _ in range(max_pages):
+            variables = {"first": 250, "after": cursor, "query": query_filter}
+            result = await self._post_graphql(PAGINATED_ORDERS_QUERY, variables)
+            data = result["data"]["orders"]
+
+            for edge in data["edges"]:
+                orders.append(edge["node"])
+
+            if not data["pageInfo"]["hasNextPage"]:
+                break
+            cursor = data["pageInfo"]["endCursor"]
+        else:
+            logger.warning(
+                "Pagination safety limit reached (%d pages). "
+                "Consider using bulk operations.",
+                max_pages,
+            )
+
+        return orders
+
     async def fetch_shop_timezone(self) -> str:
         """Return the shop's IANA timezone string (e.g. ``America/New_York``).
 

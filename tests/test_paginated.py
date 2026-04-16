@@ -142,12 +142,14 @@ async def test_paginated_returns_raw_structure(shopify_settings):
     """Each returned order dict has expected keys from the GraphQL query."""
     with respx.mock:
         respx.post(SHOPIFY_GQL_URL).mock(
-            side_effect=PaginatedDispatcher([FIXTURE_DATA["page1"]])
+            side_effect=PaginatedDispatcher(
+                [FIXTURE_DATA["page1"], FIXTURE_DATA["page2"]]
+            )
         )
         async with ShopifyClient(shopify_settings) as client:
             orders = await client.fetch_orders_paginated("2025-06-15", "2025-06-16")
 
-    assert len(orders) == 3
+    assert len(orders) == 5
     expected_keys = {
         "id",
         "createdAt",
