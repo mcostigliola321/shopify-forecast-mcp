@@ -10,7 +10,7 @@ Each phase is buildable, testable, and demoable before the next begins. Phases 1
 - [x] **Phase 1: Scaffold & Config** — `uv` package layout, pyproject, config loader, smoke CI (completed 2026-04-13)
 - [x] **Phase 2: Shopify Client** — async GraphQL client with bulk ops, pagination, refund-aware normalization (completed 2026-04-16)
 - [ ] **Phase 3: Time-series & Forecaster** — aggregation pipeline and TimesFM 2.5 singleton wrapper
-- [ ] **Phase 4: MCP Server Skeleton + CLI (MVP)** — FastMCP server, `forecast_revenue` + `forecast_demand`, CLI entry points
+- [x] **Phase 4: MCP Server Skeleton + CLI (MVP)** — FastMCP server, `forecast_revenue` + `forecast_demand`, CLI entry points (completed 2026-04-16)
 - [ ] **Phase 5: Analytics, Covariates & Remaining Tools** — analytics module, XReg behind flag, 4 more MCP tools
 - [ ] **Phase 6: Advanced Tools** — `compare_scenarios`, inventory-aware reorder, multi-store
 - [ ] **Phase 7: Distribution & Docs** — PyPI Trusted Publisher, Docker images, README/SETUP/TOOLS/ARCHITECTURE
@@ -87,7 +87,7 @@ Each phase is buildable, testable, and demoable before the next begins. Phases 1
 - [x] 04-01-PLAN.md — FastMCP server skeleton with lifespan + AppContext (Wave 1)
 - [x] 04-02-PLAN.md — forecast_revenue tool + tests (Wave 2)
 - [x] 04-03-PLAN.md — forecast_demand tool + tests (Wave 3)
-- [ ] 04-04-PLAN.md — CLI subcommands + end-to-end tests (Wave 4)
+- [x] 04-04-PLAN.md — CLI subcommands + end-to-end tests (Wave 4)
 
 **Success criteria**:
 - `uvx shopify-forecast-mcp` launches under Claude Desktop; both tools appear in the tool list
