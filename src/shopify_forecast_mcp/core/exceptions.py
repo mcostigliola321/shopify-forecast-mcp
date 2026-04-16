@@ -57,3 +57,20 @@ class BulkOperationError(Exception):
             f"Bulk operation {operation_id} ended with status: {status}"
             + (f", error: {error_code}" if error_code else "")
         )
+
+
+class ShopifyCliError(Exception):
+    """Raised when the Shopify CLI subprocess returns a non-zero exit code
+    or produces unparseable output."""
+
+    pass
+
+
+class ShopifyCliNotFoundError(ShopifyCliError):
+    """Raised when neither an access token nor the Shopify CLI is available.
+
+    Provides a user-friendly message with setup instructions for both
+    the CLI (interactive) and token (headless) paths.
+    """
+
+    pass
