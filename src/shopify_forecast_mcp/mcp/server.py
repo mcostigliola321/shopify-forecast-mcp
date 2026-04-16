@@ -61,5 +61,8 @@ def main() -> None:
     mcp.run(transport="stdio")
 
 
+# Register tool handlers (must be after mcp is defined)
+import shopify_forecast_mcp.mcp.tools  # noqa: F401
+
 if __name__ == "__main__":
     main()
