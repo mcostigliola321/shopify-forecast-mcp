@@ -215,6 +215,41 @@ def shopify_client(shopify_settings: Settings) -> ShopifyClient:
 
 
 @pytest.fixture()
+def mock_cli_subprocess():
+    """Provide a helper for mocking asyncio.create_subprocess_exec for CLI backend tests.
+
+    Returns a factory that creates mock subprocess objects with configurable
+    stdout (JSON), return code, and stderr.
+
+    Usage::
+
+        proc = mock_cli_subprocess({"data": {"shop": {"name": "X"}}})
+        with patch("asyncio.create_subprocess_exec", return_value=proc):
+            result = await cli_backend.post_graphql("{ shop { name } }")
+    """
+    from unittest.mock import AsyncMock, MagicMock
+
+    def make_mock_process(
+        stdout_data: dict | bytes,
+        returncode: int = 0,
+        stderr: str = "",
+    ):
+        proc = MagicMock()
+        proc.returncode = returncode
+        proc.communicate = AsyncMock(
+            return_value=(
+                json.dumps(stdout_data).encode()
+                if isinstance(stdout_data, dict)
+                else stdout_data,
+                stderr.encode(),
+            )
+        )
+        return proc
+
+    return make_mock_process
+
+
+@pytest.fixture()
 def mock_shopify():
     """Mock all Shopify GraphQL requests via the standard dispatcher."""
     with respx.mock:
