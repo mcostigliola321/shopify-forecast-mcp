@@ -14,8 +14,19 @@ import httpx
 import pytest
 import respx
 
+from shopify_forecast_mcp.core.shopify_backend import DirectBackend
 from shopify_forecast_mcp.core.shopify_client import ShopifyClient
 from tests.conftest import MOCK_COST_EXTENSIONS, SHOPIFY_GQL_URL
+
+
+def _make_client(settings):
+    """Create a ShopifyClient with DirectBackend for testing."""
+    backend = DirectBackend(
+        store=settings.shop,
+        access_token=settings.access_token,
+        api_version=settings.api_version,
+    )
+    return ShopifyClient(backend, settings)
 
 # ---------------------------------------------------------------------------
 # Load fixture data
@@ -68,7 +79,7 @@ async def test_paginated_single_page(shopify_settings):
         respx.post(SHOPIFY_GQL_URL).mock(
             side_effect=PaginatedDispatcher([FIXTURE_DATA["page2"]])
         )
-        async with ShopifyClient(shopify_settings) as client:
+        async with _make_client(shopify_settings) as client:
             orders = await client.fetch_orders_paginated("2025-06-15", "2025-06-16")
 
     assert len(orders) == 2
@@ -85,7 +96,7 @@ async def test_paginated_multi_page(shopify_settings):
                 [FIXTURE_DATA["page1"], FIXTURE_DATA["page2"]]
             )
         )
-        async with ShopifyClient(shopify_settings) as client:
+        async with _make_client(shopify_settings) as client:
             orders = await client.fetch_orders_paginated("2025-06-15", "2025-06-16")
 
     assert len(orders) == 5
@@ -106,7 +117,7 @@ async def test_paginated_empty(shopify_settings):
         respx.post(SHOPIFY_GQL_URL).mock(
             side_effect=PaginatedDispatcher([_empty_page_response()])
         )
-        async with ShopifyClient(shopify_settings) as client:
+        async with _make_client(shopify_settings) as client:
             orders = await client.fetch_orders_paginated("2025-01-01", "2025-01-02")
 
     assert orders == []
@@ -123,7 +134,7 @@ async def test_paginated_query_string(shopify_settings):
 
     with respx.mock:
         respx.post(SHOPIFY_GQL_URL).mock(side_effect=capture_dispatcher)
-        async with ShopifyClient(shopify_settings) as client:
+        async with _make_client(shopify_settings) as client:
             await client.fetch_orders_paginated("2025-01-01", "2025-12-31")
 
     assert len(captured_bodies) == 1
@@ -146,7 +157,7 @@ async def test_paginated_returns_raw_structure(shopify_settings):
                 [FIXTURE_DATA["page1"], FIXTURE_DATA["page2"]]
             )
         )
-        async with ShopifyClient(shopify_settings) as client:
+        async with _make_client(shopify_settings) as client:
             orders = await client.fetch_orders_paginated("2025-06-15", "2025-06-16")
 
     assert len(orders) == 5

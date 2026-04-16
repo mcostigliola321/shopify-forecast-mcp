@@ -90,7 +90,7 @@ class TestPollBulkOperation:
         self, shopify_client, bulk_responses: dict
     ) -> None:
         """Polling returns operation dict when COMPLETED."""
-        shopify_client._post_graphql = AsyncMock(
+        shopify_client._backend.post_graphql = AsyncMock(
             return_value=bulk_responses["completed"]
         )
 
@@ -105,7 +105,7 @@ class TestPollBulkOperation:
         self, shopify_client, bulk_responses: dict
     ) -> None:
         """RUNNING then COMPLETED -- polls twice."""
-        shopify_client._post_graphql = AsyncMock(
+        shopify_client._backend.post_graphql = AsyncMock(
             side_effect=[
                 bulk_responses["running"],
                 bulk_responses["completed"],
@@ -118,14 +118,14 @@ class TestPollBulkOperation:
             )
 
         assert result["status"] == "COMPLETED"
-        assert shopify_client._post_graphql.call_count == 2
+        assert shopify_client._backend.post_graphql.call_count == 2
 
     @pytest.mark.asyncio(loop_scope="function")
     async def test_poll_failed(
         self, shopify_client, bulk_responses: dict
     ) -> None:
         """FAILED status raises BulkOperationError."""
-        shopify_client._post_graphql = AsyncMock(
+        shopify_client._backend.post_graphql = AsyncMock(
             return_value=bulk_responses["failed"]
         )
 
@@ -148,24 +148,22 @@ class TestFetchOrdersBulkLifecycle:
         """Full lifecycle: start -> poll -> download -> parse -> returns orders."""
         jsonl_content = "\n".join(bulk_jsonl_lines)
 
-        # Mock _post_graphql: first call = start mutation, second = poll completed
-        shopify_client._post_graphql = AsyncMock(
-            side_effect=[
-                bulk_responses["start"],
-                bulk_responses["completed"],
-            ]
+        # Mock backend: mutation for start, query for poll, download for JSONL
+        shopify_client._backend.post_graphql_mutation = AsyncMock(
+            return_value=bulk_responses["start"]
+        )
+        shopify_client._backend.post_graphql = AsyncMock(
+            return_value=bulk_responses["completed"]
         )
 
         download_url = bulk_responses["completed"]["data"]["bulkOperation"]["url"]
+        shopify_client._backend.download_url = AsyncMock(
+            return_value=jsonl_content.encode()
+        )
 
-        with respx.mock:
-            respx.get(download_url).mock(
-                return_value=httpx.Response(200, text=jsonl_content)
-            )
-
-            orders = await fetch_orders_bulk(
-                shopify_client, "2025-06-01", "2025-06-30"
-            )
+        orders = await fetch_orders_bulk(
+            shopify_client, "2025-06-01", "2025-06-30"
+        )
 
         assert len(orders) == 4
         # Verify line items are attached

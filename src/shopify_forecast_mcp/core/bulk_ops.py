@@ -114,7 +114,7 @@ async def _poll_bulk_operation(
     backoff = _INITIAL_BACKOFF_S
 
     for attempt in range(_MAX_POLL_ATTEMPTS):
-        data = await client._post_graphql(
+        data = await client._backend.post_graphql(
             BULK_STATUS_QUERY, {"id": operation_id}
         )
         op = data["data"]["bulkOperation"]
@@ -156,12 +156,10 @@ async def _download_bulk_result(
 ) -> list[dict]:
     """Download JSONL from the bulk operation result URL and parse it.
 
-    Uses the client's underlying httpx client for the HTTP GET.
+    Uses the backend's ``download_url`` method (signed URL, no auth needed).
     """
-    resp = await client._client.get(url)
-    resp.raise_for_status()
-
-    lines = resp.text.strip().splitlines()
+    content = await client._backend.download_url(url)
+    lines = content.decode().strip().splitlines()
     return parse_bulk_jsonl(lines)
 
 
@@ -199,8 +197,8 @@ async def fetch_orders_bulk(
     )
     inner_query = BULK_ORDERS_INNER_QUERY.replace("$QUERY_FILTER", query_filter)
 
-    # Start the bulk operation
-    data = await client._post_graphql(BULK_RUN_MUTATION, {"query": inner_query})
+    # Start the bulk operation (mutation)
+    data = await client._backend.post_graphql_mutation(BULK_RUN_MUTATION, {"query": inner_query})
     result = data["data"]["bulkOperationRunQuery"]
 
     # Check for user errors

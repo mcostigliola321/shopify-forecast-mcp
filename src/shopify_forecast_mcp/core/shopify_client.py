@@ -1,9 +1,7 @@
-"""Shopify Admin GraphQL API client with cost-based throttle handling.
+"""Shopify Admin GraphQL API client with pluggable backend execution.
 
-Wraps :class:`httpx.AsyncClient` to provide authenticated access to
-Shopify's Admin GraphQL endpoint.  The ``_post_graphql`` helper
-automatically parses ``extensions.cost.throttleStatus`` and retries
-on ``THROTTLED`` errors with a calculated backoff.
+Delegates all GraphQL execution to a :class:`ShopifyBackend` instance,
+decoupling transport (httpx vs CLI) from query logic.
 
 **Required scopes:** ``read_orders``, ``read_all_orders``,
 ``read_products``, ``read_inventory``.  The ``read_all_orders`` scope
@@ -13,24 +11,18 @@ order history.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from pathlib import Path
 from typing import Any
 
-import httpx
-
 from shopify_forecast_mcp.config import Settings
 from shopify_forecast_mcp.core.cache import OrderCache
-from shopify_forecast_mcp.core.exceptions import (
-    ShopifyGraphQLError,
-    ShopifyThrottledError,
-)
 from shopify_forecast_mcp.core.normalize import (
     filter_orders,
     normalize_order,
     strip_gid,
 )
+from shopify_forecast_mcp.core.shopify_backend import ShopifyBackend
 
 logger = logging.getLogger(__name__)
 
@@ -270,30 +262,27 @@ query FetchCollections($after: String) {
 
 
 class ShopifyClient:
-    """Async Shopify Admin GraphQL client with cost-based throttle handling.
+    """Async Shopify Admin GraphQL client with pluggable backend.
 
     Usage::
 
-        async with ShopifyClient(settings) as client:
+        backend = create_backend(settings)
+        async with ShopifyClient(backend, settings) as client:
             tz = await client.fetch_shop_timezone()
     """
 
-    _MAX_RETRIES: int = 3
-
-    def __init__(self, settings: Settings, cache_dir: Path | None = None) -> None:
+    def __init__(
+        self,
+        backend: ShopifyBackend,
+        settings: Settings,
+        cache_dir: Path | None = None,
+    ) -> None:
+        self._backend = backend
         self._settings = settings
         self._shop_tz: str | None = None
         self._cache = OrderCache(
             cache_dir=cache_dir,
             ttl=settings.forecast_cache_ttl,
-        )
-        self._client = httpx.AsyncClient(
-            base_url=f"https://{settings.shop}/admin/api/{settings.api_version}",
-            headers={
-                "X-Shopify-Access-Token": settings.access_token.get_secret_value(),
-                "Content-Type": "application/json",
-            },
-            timeout=httpx.Timeout(60.0, connect=10.0),
         )
 
     # -- Context manager -----------------------------------------------------
@@ -310,8 +299,8 @@ class ShopifyClient:
         await self.close()
 
     async def close(self) -> None:
-        """Close the underlying HTTP client."""
-        await self._client.aclose()
+        """Close the underlying backend."""
+        await self._backend.close()
 
     # -- Core GraphQL transport -----------------------------------------------
 
@@ -319,96 +308,14 @@ class ShopifyClient:
         self,
         query: str,
         variables: dict[str, Any] | None = None,
-        *,
-        _attempt: int = 0,
+        **kwargs: Any,
     ) -> dict[str, Any]:
-        """POST a GraphQL query and return the parsed JSON response.
+        """Delegate GraphQL queries to the backend.
 
-        Automatically retries on Shopify THROTTLED errors (HTTP 200 with
-        ``errors[].extensions.code == "THROTTLED"``) using a calculated
-        backoff based on ``extensions.cost.throttleStatus``.
-
-        Returns the **full** response dict (including ``extensions``) so
-        callers can inspect cost metadata.
-
-        Raises:
-            ShopifyThrottledError: After ``_MAX_RETRIES`` throttle retries.
-            ShopifyGraphQLError: On non-throttle GraphQL errors.
-            httpx.HTTPStatusError: On HTTP-level errors (4xx/5xx).
+        The ``**kwargs`` absorbs the legacy ``_attempt`` keyword so any
+        lingering internal callers do not break.
         """
-        resp = await self._client.post(
-            "/graphql.json",
-            json={"query": query, "variables": variables or {}},
-        )
-        resp.raise_for_status()
-
-        data: dict[str, Any] = resp.json()
-
-        # Log cost metadata when available
-        cost = data.get("extensions", {}).get("cost")
-        if cost:
-            throttle = cost.get("throttleStatus", {})
-            logger.debug(
-                "GraphQL cost: requested=%s actual=%s available=%.0f/%.0f",
-                cost.get("requestedQueryCost"),
-                cost.get("actualQueryCost"),
-                throttle.get("currentlyAvailable", 0),
-                throttle.get("maximumAvailable", 0),
-            )
-
-        # Check for GraphQL-level errors
-        errors = data.get("errors")
-        if errors:
-            # Detect THROTTLED -- HTTP 200 with errors[].extensions.code
-            is_throttled = any(
-                e.get("extensions", {}).get("code") == "THROTTLED"
-                for e in errors
-            )
-            if is_throttled:
-                return await self._handle_throttle(data, query, variables, _attempt)
-            raise ShopifyGraphQLError(errors)
-
-        return data
-
-    async def _handle_throttle(
-        self,
-        data: dict[str, Any],
-        query: str,
-        variables: dict[str, Any] | None,
-        attempt: int,
-    ) -> dict[str, Any]:
-        """Sleep based on throttle status and retry the query.
-
-        Sleep formula: ``(requestedCost - currentlyAvailable) / restoreRate + 0.5``
-        capped at 30 seconds.
-
-        Raises:
-            ShopifyThrottledError: After ``_MAX_RETRIES`` attempts.
-        """
-        if attempt >= self._MAX_RETRIES:
-            raise ShopifyThrottledError(data.get("errors", []))
-
-        cost = data.get("extensions", {}).get("cost", {})
-        throttle = cost.get("throttleStatus", {})
-        available = throttle.get("currentlyAvailable", 0)
-        restore_rate = throttle.get("restoreRate", 100)
-        requested = cost.get("requestedQueryCost", 1000)
-
-        deficit = max(requested - available, 0)
-        sleep_seconds = (
-            (deficit / restore_rate + 0.5) if restore_rate > 0 else 2.0
-        )
-        sleep_seconds = min(sleep_seconds, 30.0)
-
-        logger.info(
-            "Throttled. Sleeping %.1fs (attempt %d/%d)",
-            sleep_seconds,
-            attempt + 1,
-            self._MAX_RETRIES,
-        )
-
-        await asyncio.sleep(sleep_seconds)
-        return await self._post_graphql(query, variables, _attempt=attempt + 1)
+        return await self._backend.post_graphql(query, variables)
 
     # -- High-level helpers ---------------------------------------------------
 

@@ -15,6 +15,7 @@ import numpy as np
 from shopify_forecast_mcp.config import get_settings
 from shopify_forecast_mcp.core.forecast_result import ForecastResult
 from shopify_forecast_mcp.core.forecaster import get_engine
+from shopify_forecast_mcp.core.shopify_backend import create_backend
 from shopify_forecast_mcp.core.shopify_client import ShopifyClient
 from shopify_forecast_mcp.core.timeseries import (
     clean_series,
@@ -62,7 +63,8 @@ def build_parser() -> argparse.ArgumentParser:
 async def _run_revenue(args: argparse.Namespace) -> int:
     """Execute the revenue forecast and print results."""
     settings = get_settings()
-    async with ShopifyClient(settings) as shopify:
+    backend = create_backend(settings)
+    async with ShopifyClient(backend, settings) as shopify:
         end = date.today()
         start = end - timedelta(days=args.context)
 
@@ -116,7 +118,8 @@ async def _run_demand(args: argparse.Namespace) -> int:
     settings = get_settings()
     group_by_map = {"product": "product_id", "collection": "collection_id", "sku": "sku"}
 
-    async with ShopifyClient(settings) as shopify:
+    backend = create_backend(settings)
+    async with ShopifyClient(backend, settings) as shopify:
         end = date.today()
         start = end - timedelta(days=365)
 

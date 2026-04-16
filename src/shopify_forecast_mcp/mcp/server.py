@@ -12,6 +12,7 @@ from mcp.server.session import ServerSession
 
 from shopify_forecast_mcp.config import get_settings
 from shopify_forecast_mcp.core.forecaster import ForecastEngine, get_engine
+from shopify_forecast_mcp.core.shopify_backend import create_backend
 from shopify_forecast_mcp.core.shopify_client import ShopifyClient
 
 # R7.8: ALL logging to stderr -- stdio transport uses stdout for JSON-RPC
@@ -41,7 +42,8 @@ async def lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
         getattr(logging, settings.log_level.upper(), logging.INFO)
     )
 
-    shopify = ShopifyClient(settings)
+    backend = create_backend(settings)
+    shopify = ShopifyClient(backend, settings)
     engine = get_engine(settings)
     engine.load()
 

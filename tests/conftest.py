@@ -13,6 +13,7 @@ import pytest
 import respx
 
 from shopify_forecast_mcp.config import Settings
+from shopify_forecast_mcp.core.shopify_backend import DirectBackend
 from shopify_forecast_mcp.core.shopify_client import ShopifyClient
 
 # ---------------------------------------------------------------------------
@@ -205,7 +206,12 @@ def shopify_settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
 @pytest.fixture()
 def shopify_client(shopify_settings: Settings) -> ShopifyClient:
     """Return a ShopifyClient wired to the test mock store."""
-    return ShopifyClient(shopify_settings)
+    backend = DirectBackend(
+        store=shopify_settings.shop,
+        access_token=shopify_settings.access_token,
+        api_version=shopify_settings.api_version,
+    )
+    return ShopifyClient(backend, shopify_settings)
 
 
 @pytest.fixture()
