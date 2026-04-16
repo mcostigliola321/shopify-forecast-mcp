@@ -51,9 +51,9 @@ Each phase is buildable, testable, and demoable before the next begins. Phases 1
 
 **Plan files:** 4 plans, 3 waves
 - [x] 02-01-PLAN.md — HTTP client + auth + schema constants (Wave 1)
-- [ ] 02-02-PLAN.md — Paginated orders query (Wave 2)
+- [x] 02-02-PLAN.md — Paginated orders query (Wave 2)
 - [x] 02-03-PLAN.md — Bulk operations path (Wave 2, parallel with 02-02)
-- [ ] 02-04-PLAN.md — Normalization, caching, wrappers (Wave 3)
+- [x] 02-04-PLAN.md — Normalization, caching, wrappers (Wave 3)
 
 **Success criteria**:
 - Against mocked GraphQL, `fetch_orders(start, end)` returns normalized dicts matching fixture expectations
