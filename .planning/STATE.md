@@ -4,9 +4,10 @@ Living memory file. Updated at every phase transition.
 
 ## Current Status
 
-**Phase:** 1 — Scaffold & Packaging ✅ COMPLETE
-**Last completed:** 01-04 CI green on both Linux + macOS (2026-04-15)
-**Next action:** `/gsd-plan-phase 2` — Shopify Client
+**Phase:** 2 — Shopify Client (in progress)
+**Current Plan:** 1 of 4 complete
+**Last completed:** 02-01 ShopifyClient foundation (2026-04-16)
+**Next action:** Execute 02-02-PLAN.md — Paginated orders
 
 ## Initialization
 
@@ -21,7 +22,7 @@ Living memory file. Updated at every phase transition.
 | Phase | Name | Status |
 |---|---|---|
 | 1 | Scaffold & Packaging | ✅ Complete (CI green 2026-04-15) |
-| 2 | Shopify Client | ⏳ Pending |
+| 2 | Shopify Client | 🔧 In Progress (1/4 plans) |
 | 3 | Time-series & Forecaster | ⏳ Pending |
 | 4 | MCP Server & CLI (MVP) | ⏳ Pending |
 | 5 | Analytics & Covariates | ⏳ Pending |

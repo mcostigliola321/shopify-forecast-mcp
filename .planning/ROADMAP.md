@@ -7,7 +7,7 @@ Each phase is buildable, testable, and demoable before the next begins. Phases 1
 
 ## Phases
 
-- [ ] **Phase 1: Scaffold & Config** — `uv` package layout, pyproject, config loader, smoke CI
+- [x] **Phase 1: Scaffold & Config** — `uv` package layout, pyproject, config loader, smoke CI (completed 2026-04-13)
 - [ ] **Phase 2: Shopify Client** — async GraphQL client with bulk ops, pagination, refund-aware normalization
 - [ ] **Phase 3: Time-series & Forecaster** — aggregation pipeline and TimesFM 2.5 singleton wrapper
 - [ ] **Phase 4: MCP Server Skeleton + CLI (MVP)** — FastMCP server, `forecast_revenue` + `forecast_demand`, CLI entry points
@@ -48,6 +48,12 @@ Each phase is buildable, testable, and demoable before the next begins. Phases 1
 2. **Paginated orders query** — small-fetch path (<10k orders) using `orders(first: 250, after: $cursor)` with `displayFinancialStatus` (NOT `financialStatus`), `subtotalPriceSet.shopMoney`, line items, refunds, `test`, `cancelledAt`. Parse `extensions.cost.throttleStatus` and exponentially back off on THROTTLED.
 3. **Bulk operations path** — `bulkOperationRunQuery` → poll `bulkOperation(id: $id)` every 2s → download JSONL → reconstruct nested children via `__parentId`. Honor 1hr URL expiry. Default path for >10k orders.
 4. **Normalization & caching** — GID stripping, refund-aware net revenue and net quantity at line-item ID level, exclude draft/test/cancelled orders, fetch shop `ianaTimezone` once and bucket `createdAt` into local-time days. `fetch_orders/products/collections` wrappers. Local file cache keyed by date range with `forecast_cache_ttl`. Tests via `respx` with fixture GraphQL responses (paginated + bulk JSONL).
+
+**Plan files:** 4 plans, 3 waves
+- [x] 02-01-PLAN.md — HTTP client + auth + schema constants (Wave 1)
+- [ ] 02-02-PLAN.md — Paginated orders query (Wave 2)
+- [ ] 02-03-PLAN.md — Bulk operations path (Wave 2, parallel with 02-02)
+- [ ] 02-04-PLAN.md — Normalization, caching, wrappers (Wave 3)
 
 **Success criteria**:
 - Against mocked GraphQL, `fetch_orders(start, end)` returns normalized dicts matching fixture expectations
