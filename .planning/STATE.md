@@ -5,9 +5,9 @@ Living memory file. Updated at every phase transition.
 ## Current Status
 
 **Phase:** 4 — MCP Server & CLI (MVP)
-**Current Plan:** 1 of 4 complete
-**Last completed:** 04-01 FastMCP server skeleton (2026-04-16)
-**Next action:** Execute 04-02 plan (forecast tools)
+**Current Plan:** 2 of 4 complete
+**Last completed:** 04-02 forecast_revenue tool (2026-04-16)
+**Next action:** Execute 04-03 plan
 
 ## Initialization
 
@@ -24,7 +24,7 @@ Living memory file. Updated at every phase transition.
 | 1 | Scaffold & Packaging | ✅ Complete (CI green 2026-04-15) |
 | 2 | Shopify Client | ✅ Complete (4/4 plans, 2026-04-16) |
 | 3 | Time-series & Forecaster | ✅ Complete (4/4 plans, 2026-04-16) |
-| 4 | MCP Server & CLI (MVP) | 🔄 In Progress (1/4) |
+| 4 | MCP Server & CLI (MVP) | 🔄 In Progress (2/4) |
 | 5 | Analytics & Covariates | ⏳ Pending |
 | 6 | Advanced Features | ⏳ Pending |
 | 7 | Distribution | ⏳ Pending |

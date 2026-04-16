@@ -84,8 +84,8 @@ Each phase is buildable, testable, and demoable before the next begins. Phases 1
 **Depends on**: Phase 3
 **Requirements**: R7.1, R7.2, R7.3, R7.4, R7.5, R7.6, R7.7, R7.8, R7.9, R7.10, R7.11, R8.1, R8.2, R9.1, R9.2, R9.3, R9.4, R10.4 (mcp tool tests)
 **Plan files:** 4 plans, 4 waves
-- [ ] 04-01-PLAN.md — FastMCP server skeleton with lifespan + AppContext (Wave 1)
-- [ ] 04-02-PLAN.md — forecast_revenue tool + tests (Wave 2)
+- [x] 04-01-PLAN.md — FastMCP server skeleton with lifespan + AppContext (Wave 1)
+- [x] 04-02-PLAN.md — forecast_revenue tool + tests (Wave 2)
 - [ ] 04-03-PLAN.md — forecast_demand tool + tests (Wave 3)
 - [ ] 04-04-PLAN.md — CLI subcommands + end-to-end tests (Wave 4)
 
