@@ -1,0 +1,102 @@
+{
+  "start": {
+    "data": {
+      "bulkOperationRunQuery": {
+        "bulkOperation": {
+          "id": "gid://shopify/BulkOperation/999",
+          "status": "CREATED"
+        },
+        "userErrors": []
+      }
+    },
+    "extensions": {
+      "cost": {
+        "requestedQueryCost": 10,
+        "actualQueryCost": 10,
+        "throttleStatus": {
+          "maximumAvailable": 2000.0,
+          "currentlyAvailable": 1990.0,
+          "restoreRate": 100.0
+        }
+      }
+    }
+  },
+  "running": {
+    "data": {
+      "bulkOperation": {
+        "id": "gid://shopify/BulkOperation/999",
+        "status": "RUNNING",
+        "errorCode": null,
+        "objectCount": "42",
+        "fileSize": null,
+        "url": null,
+        "createdAt": "2025-06-15T14:00:00Z",
+        "completedAt": null,
+        "partialDataUrl": null
+      }
+    },
+    "extensions": {
+      "cost": {
+        "requestedQueryCost": 1,
+        "actualQueryCost": 1,
+        "throttleStatus": {
+          "maximumAvailable": 2000.0,
+          "currentlyAvailable": 1999.0,
+          "restoreRate": 100.0
+        }
+      }
+    }
+  },
+  "completed": {
+    "data": {
+      "bulkOperation": {
+        "id": "gid://shopify/BulkOperation/999",
+        "status": "COMPLETED",
+        "errorCode": null,
+        "objectCount": "150",
+        "fileSize": "4096",
+        "url": "https://storage.googleapis.com/shopify-test/bulk-result.jsonl",
+        "createdAt": "2025-06-15T14:00:00Z",
+        "completedAt": "2025-06-15T14:05:00Z",
+        "partialDataUrl": null
+      }
+    },
+    "extensions": {
+      "cost": {
+        "requestedQueryCost": 1,
+        "actualQueryCost": 1,
+        "throttleStatus": {
+          "maximumAvailable": 2000.0,
+          "currentlyAvailable": 1999.0,
+          "restoreRate": 100.0
+        }
+      }
+    }
+  },
+  "failed": {
+    "data": {
+      "bulkOperation": {
+        "id": "gid://shopify/BulkOperation/999",
+        "status": "FAILED",
+        "errorCode": "ACCESS_DENIED",
+        "objectCount": "0",
+        "fileSize": null,
+        "url": null,
+        "createdAt": "2025-06-15T14:00:00Z",
+        "completedAt": "2025-06-15T14:00:05Z",
+        "partialDataUrl": null
+      }
+    },
+    "extensions": {
+      "cost": {
+        "requestedQueryCost": 1,
+        "actualQueryCost": 1,
+        "throttleStatus": {
+          "maximumAvailable": 2000.0,
+          "currentlyAvailable": 1999.0,
+          "restoreRate": 100.0
+        }
+      }
+    }
+  }
+}
