@@ -66,7 +66,7 @@ Each phase is buildable, testable, and demoable before the next begins. Phases 1
 **Plans:** 4 plans, 3 waves
 - [x] 03-01-PLAN.md — Time-series aggregation: orders_to_daily_series (Wave 1)
 - [x] 03-02-PLAN.md — Resample & clean: resample_series, clean_series (Wave 1, parallel with 03-01)
-- [ ] 03-03-PLAN.md — TimesFM engine: ForecastEngine singleton + sine-wave test (Wave 2)
+- [x] 03-03-PLAN.md — TimesFM engine: ForecastEngine singleton + sine-wave test (Wave 2)
 - [ ] 03-04-PLAN.md — ForecastResult dataclass + fixture data + integration tests (Wave 3)
 
 **Success criteria**:
