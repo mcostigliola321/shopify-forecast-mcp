@@ -181,6 +181,93 @@ def _aggregate_by_collection(
     return result
 
 
+def resample_series(
+    series: pd.Series,
+    freq: Literal["D", "W", "M"],
+    metric: Metric = "revenue",
+) -> pd.Series:
+    """Resample a daily time series to a coarser frequency.
+
+    Args:
+        series: Daily ``pd.Series`` with ``DatetimeIndex``.
+        freq: Target frequency -- ``"D"`` (passthrough), ``"W"`` (weekly),
+            or ``"M"`` (monthly).
+        metric: Determines aggregation method. ``"aov"`` uses mean;
+            all others (``"revenue"``, ``"orders"``, ``"units"``) use sum.
+
+    Returns:
+        Resampled ``pd.Series`` with the requested frequency.
+    """
+    if freq == "D":
+        return series.copy()
+
+    if len(series) == 0:
+        return series.copy()
+
+    # Pandas 2.2+ requires "ME"/"W" instead of deprecated "M"
+    pandas_freq = "ME" if freq == "M" else freq
+    aggregator = "mean" if metric == "aov" else "sum"
+    return series.resample(pandas_freq).agg(aggregator)
+
+
+def clean_series(
+    series: pd.Series,
+    remove_outliers: bool = True,
+    outlier_method: Literal["iqr", "zscore"] = "iqr",
+    interpolate_gaps: bool = False,
+) -> pd.Series:
+    """Clean a time series by capping outliers and interpolating gaps.
+
+    CRITICAL: This function never drops data points. TimesFM requires
+    continuous series, so outliers are clipped (capped) to bound values
+    rather than removed.
+
+    Args:
+        series: ``pd.Series`` with ``DatetimeIndex``.
+        remove_outliers: Whether to cap outlier values.
+        outlier_method: ``"iqr"`` (1.5 * IQR bounds) or ``"zscore"``
+            (mean +/- 3 * std bounds).
+        interpolate_gaps: If ``True``, fill NaN values via linear
+            interpolation (edge NaNs filled with 0).
+
+    Returns:
+        Cleaned ``pd.Series`` with the same length as input.
+    """
+    original_len = len(series)
+    result = series.copy()
+
+    # Interpolate gaps first (before outlier detection)
+    if interpolate_gaps:
+        result = result.interpolate(method="linear")
+        # Fill edge NaNs that interpolation can't reach
+        result = result.fillna(0.0)
+
+    if not remove_outliers:
+        assert len(result) == original_len
+        return result
+
+    if outlier_method == "iqr":
+        q1 = result.quantile(0.25)
+        q3 = result.quantile(0.75)
+        iqr = q3 - q1
+        lower = q1 - 1.5 * iqr
+        upper = q3 + 1.5 * iqr
+        result = result.clip(lower=lower, upper=upper)
+    elif outlier_method == "zscore":
+        mean = result.mean()
+        std = result.std()
+        if std == 0:
+            return result
+        lower = mean - 3 * std
+        upper = mean + 3 * std
+        result = result.clip(lower=lower, upper=upper)
+
+    assert len(result) == original_len, (
+        f"clean_series changed series length: {original_len} -> {len(result)}"
+    )
+    return result
+
+
 def orders_to_daily_series(
     orders: list[dict],
     metric: Metric = "revenue",
