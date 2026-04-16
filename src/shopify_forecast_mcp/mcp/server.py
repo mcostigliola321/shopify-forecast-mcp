@@ -47,7 +47,11 @@ async def lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
     engine = get_engine(settings)
     engine.load()
 
-    log.info("shopify-forecast-mcp ready (shop=%s)", settings.shop)
+    log.info(
+        "shopify-forecast-mcp ready (shop=%s, backend=%s)",
+        settings.shop,
+        type(backend).__name__,
+    )
     try:
         yield AppContext(shopify=shopify, forecaster=engine)
     finally:
