@@ -95,3 +95,9 @@ None -- plan executed exactly as written.
 - **T-02-02 (Tampering):** `raise_for_status()` for HTTP errors; explicit `errors` parsing before trusting `data`.
 - **T-02-03 (DoS):** Max 3 retries, 30s sleep cap, `ShopifyThrottledError` on exhaustion.
 - **T-02-04 (Info Disclosure):** Logger never logs token or full headers; only cost metadata logged at DEBUG level.
+
+## Self-Check: PASSED
+
+- All 4 created files exist on disk
+- Commits 51ef287 and 7c2f25f verified in git log
+- 14/14 tests pass (uv run pytest -x -q)
