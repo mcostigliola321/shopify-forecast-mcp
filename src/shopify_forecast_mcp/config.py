@@ -23,7 +23,9 @@ class Settings(BaseSettings):
 
     # --- Required ---
     shop: str = Field(..., description="mystore.myshopify.com")
-    access_token: SecretStr = Field(..., description="Shopify Admin API access token")
+    access_token: SecretStr | None = Field(
+        None, description="Shopify Admin API access token (optional if using Shopify CLI)"
+    )
 
     # --- Shopify API ---
     api_version: str = "2026-04"

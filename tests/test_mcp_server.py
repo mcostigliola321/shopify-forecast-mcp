@@ -95,7 +95,5 @@ async def test_lifespan_context_manager(shopify_settings):
             mock_engine.load.assert_called_once()
 
         # After exiting, shopify client should have been closed
-        # (ShopifyClient.close calls httpx aclose -- we verify it was invoked)
-        # The real close is async, but we can check it was awaited by
-        # verifying the underlying httpx client is closed
-        assert ctx.shopify._client.is_closed
+        # (ShopifyClient.close delegates to backend.close which calls httpx aclose)
+        assert ctx.shopify._backend._client.is_closed

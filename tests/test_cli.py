@@ -165,6 +165,7 @@ class TestRunRevenue:
 
         with (
             patch("shopify_forecast_mcp.cli.get_settings"),
+            patch("shopify_forecast_mcp.cli.create_backend"),
             patch("shopify_forecast_mcp.cli.ShopifyClient", return_value=mock_client),
             patch("shopify_forecast_mcp.cli.get_engine", return_value=engine),
         ):
@@ -187,6 +188,7 @@ class TestRunRevenue:
 
         with (
             patch("shopify_forecast_mcp.cli.get_settings"),
+            patch("shopify_forecast_mcp.cli.create_backend"),
             patch("shopify_forecast_mcp.cli.ShopifyClient", return_value=mock_client),
             patch("shopify_forecast_mcp.cli.get_engine", return_value=engine),
         ):
@@ -210,6 +212,7 @@ class TestRunRevenue:
 
         with (
             patch("shopify_forecast_mcp.cli.get_settings"),
+            patch("shopify_forecast_mcp.cli.create_backend"),
             patch("shopify_forecast_mcp.cli.ShopifyClient", return_value=mock_client),
             patch("shopify_forecast_mcp.cli.get_engine", return_value=engine),
         ):
@@ -232,6 +235,7 @@ class TestRunDemand:
 
         with (
             patch("shopify_forecast_mcp.cli.get_settings"),
+            patch("shopify_forecast_mcp.cli.create_backend"),
             patch("shopify_forecast_mcp.cli.ShopifyClient", return_value=mock_client),
             patch("shopify_forecast_mcp.cli.get_engine", return_value=engine),
         ):
@@ -253,6 +257,7 @@ class TestRunDemand:
 
         with (
             patch("shopify_forecast_mcp.cli.get_settings"),
+            patch("shopify_forecast_mcp.cli.create_backend"),
             patch("shopify_forecast_mcp.cli.ShopifyClient", return_value=mock_client),
             patch("shopify_forecast_mcp.cli.get_engine", return_value=engine),
         ):
@@ -278,6 +283,7 @@ class TestRunDemand:
 
         with (
             patch("shopify_forecast_mcp.cli.get_settings"),
+            patch("shopify_forecast_mcp.cli.create_backend"),
             patch("shopify_forecast_mcp.cli.ShopifyClient", return_value=mock_client),
             patch("shopify_forecast_mcp.cli.get_engine", return_value=engine),
         ):
@@ -298,6 +304,7 @@ class TestRunDemand:
 
         with (
             patch("shopify_forecast_mcp.cli.get_settings"),
+            patch("shopify_forecast_mcp.cli.create_backend"),
             patch("shopify_forecast_mcp.cli.ShopifyClient", return_value=mock_client),
             patch("shopify_forecast_mcp.cli.get_engine", return_value=engine),
         ):
@@ -316,6 +323,7 @@ class TestRunDemand:
 
         with (
             patch("shopify_forecast_mcp.cli.get_settings"),
+            patch("shopify_forecast_mcp.cli.create_backend"),
             patch("shopify_forecast_mcp.cli.ShopifyClient", return_value=mock_client),
             patch("shopify_forecast_mcp.cli.get_engine", return_value=engine),
         ):

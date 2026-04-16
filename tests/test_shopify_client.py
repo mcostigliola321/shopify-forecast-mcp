@@ -8,10 +8,12 @@ import httpx
 import pytest
 import respx
 
+from shopify_forecast_mcp.config import Settings
 from shopify_forecast_mcp.core.exceptions import (
     ShopifyGraphQLError,
     ShopifyThrottledError,
 )
+from shopify_forecast_mcp.core.shopify_backend import DirectBackend
 from shopify_forecast_mcp.core.shopify_client import (
     SHOP_TIMEZONE_QUERY,
     ShopifyClient,
@@ -22,6 +24,16 @@ from tests.conftest import (
     AlwaysThrottledDispatcher,
     ThrottleThenSucceedDispatcher,
 )
+
+
+def _make_client(settings: Settings) -> ShopifyClient:
+    """Create a ShopifyClient with DirectBackend for testing."""
+    backend = DirectBackend(
+        store=settings.shop,
+        access_token=settings.access_token,
+        api_version=settings.api_version,
+    )
+    return ShopifyClient(backend, settings)
 
 
 @pytest.mark.asyncio(loop_scope="function")
@@ -61,7 +73,7 @@ async def test_throttle_backoff(shopify_settings):
 
     with respx.mock:
         respx.post(SHOPIFY_GQL_URL).mock(side_effect=dispatcher)
-        client = ShopifyClient(shopify_settings)
+        client = _make_client(shopify_settings)
 
         with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
             result = await client._post_graphql(SHOP_TIMEZONE_QUERY)
@@ -84,7 +96,7 @@ async def test_throttle_max_retries(shopify_settings):
 
     with respx.mock:
         respx.post(SHOPIFY_GQL_URL).mock(side_effect=dispatcher)
-        client = ShopifyClient(shopify_settings)
+        client = _make_client(shopify_settings)
 
         with patch("asyncio.sleep", new_callable=AsyncMock):
             with pytest.raises(ShopifyThrottledError):
@@ -106,7 +118,7 @@ async def test_graphql_error(shopify_settings):
                 },
             )
         )
-        client = ShopifyClient(shopify_settings)
+        client = _make_client(shopify_settings)
 
         with pytest.raises(ShopifyGraphQLError) as exc_info:
             await client._post_graphql("{ foo }")
@@ -140,7 +152,7 @@ async def test_fetch_shop_timezone_cached(shopify_settings):
                 },
             )
         )
-        client = ShopifyClient(shopify_settings)
+        client = _make_client(shopify_settings)
 
         tz1 = await client.fetch_shop_timezone()
         tz2 = await client.fetch_shop_timezone()

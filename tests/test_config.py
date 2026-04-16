@@ -34,7 +34,14 @@ def test_missing_required_raises(monkeypatch):
         Settings(_env_file=None)
     msg = str(exc.value)
     assert "shop" in msg
-    assert "access_token" in msg
+
+
+def test_access_token_optional(monkeypatch):
+    _clear_env(monkeypatch)
+    monkeypatch.setenv("SHOPIFY_FORECAST_SHOP", "t.myshopify.com")
+    s = Settings(_env_file=None)
+    assert s.access_token is None
+    assert s.shop == "t.myshopify.com"
 
 
 def test_defaults(monkeypatch):

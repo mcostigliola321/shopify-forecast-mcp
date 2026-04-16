@@ -14,7 +14,18 @@ import pytest
 import respx
 
 from shopify_forecast_mcp.config import Settings
+from shopify_forecast_mcp.core.shopify_backend import DirectBackend
 from shopify_forecast_mcp.core.shopify_client import ShopifyClient
+
+
+def _make_client(settings: Settings, cache_dir=None) -> ShopifyClient:
+    """Create a ShopifyClient with DirectBackend for testing."""
+    backend = DirectBackend(
+        store=settings.shop,
+        access_token=settings.access_token,
+        api_version=settings.api_version,
+    )
+    return ShopifyClient(backend, settings, cache_dir=cache_dir)
 
 FIXTURES = Path(__file__).parent / "fixtures"
 SHOPIFY_GQL_URL = (
@@ -143,7 +154,7 @@ class TestFetchOrders:
 
         with respx.mock:
             respx.post(SHOPIFY_GQL_URL).mock(side_effect=dispatch)
-            client = ShopifyClient(settings, cache_dir=tmp_path)
+            client = _make_client(settings, cache_dir=tmp_path)
             orders = await client.fetch_orders("2025-06-15", "2025-06-16")
 
         # Should have made order pagination calls
@@ -207,7 +218,7 @@ class TestFetchOrders:
             respx.get("https://storage.googleapis.com/fake-bulk.jsonl").mock(
                 return_value=httpx.Response(200, text=bulk_jsonl)
             )
-            client = ShopifyClient(settings, cache_dir=tmp_path)
+            client = _make_client(settings, cache_dir=tmp_path)
             orders = await client.fetch_orders("2025-06-15", "2025-06-16", use_bulk=True)
 
         assert "bulk_start" in call_log
@@ -220,7 +231,7 @@ class TestFetchOrders:
 
         with respx.mock:
             respx.post(SHOPIFY_GQL_URL).mock(side_effect=dispatch)
-            client = ShopifyClient(settings, cache_dir=tmp_path)
+            client = _make_client(settings, cache_dir=tmp_path)
             orders = await client.fetch_orders("2025-06-15", "2025-06-16")
 
         # Check normalized shape
@@ -238,7 +249,7 @@ class TestFetchOrders:
 
         with respx.mock:
             respx.post(SHOPIFY_GQL_URL).mock(side_effect=dispatch)
-            client = ShopifyClient(settings, cache_dir=tmp_path)
+            client = _make_client(settings, cache_dir=tmp_path)
             orders = await client.fetch_orders("2025-06-15", "2025-06-16")
 
         # Order 1005 is test=true in page2
@@ -252,7 +263,7 @@ class TestFetchOrders:
 
         with respx.mock:
             respx.post(SHOPIFY_GQL_URL).mock(side_effect=dispatch)
-            client = ShopifyClient(settings, cache_dir=tmp_path)
+            client = _make_client(settings, cache_dir=tmp_path)
 
             # First call - hits API
             orders1 = await client.fetch_orders("2025-06-15", "2025-06-16")
@@ -284,7 +295,7 @@ class TestFetchProducts:
 
         with respx.mock:
             respx.post(SHOPIFY_GQL_URL).mock(side_effect=dispatch)
-            client = ShopifyClient(settings, cache_dir=tmp_path)
+            client = _make_client(settings, cache_dir=tmp_path)
             products = await client.fetch_products()
 
         assert len(products) == 1
@@ -314,7 +325,7 @@ class TestFetchCollections:
 
         with respx.mock:
             respx.post(SHOPIFY_GQL_URL).mock(side_effect=dispatch)
-            client = ShopifyClient(settings, cache_dir=tmp_path)
+            client = _make_client(settings, cache_dir=tmp_path)
             collections = await client.fetch_collections()
 
         assert len(collections) == 1
