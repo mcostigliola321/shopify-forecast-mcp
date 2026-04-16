@@ -83,11 +83,11 @@ Each phase is buildable, testable, and demoable before the next begins. Phases 1
 **Goal**: A working `shopify-forecast-mcp` server in Claude Desktop that answers `forecast_revenue` and `forecast_demand` with real Shopify data, plus a matching CLI.
 **Depends on**: Phase 3
 **Requirements**: R7.1, R7.2, R7.3, R7.4, R7.5, R7.6, R7.7, R7.8, R7.9, R7.10, R7.11, R8.1, R8.2, R9.1, R9.2, R9.3, R9.4, R10.4 (mcp tool tests)
-**Plans**:
-1. **FastMCP server skeleton** — `mcp/server.py` using `FastMCP` from `mcp.server.fastmcp` (NOT low-level `Server`). Lifespan `@asynccontextmanager` initializes `httpx.AsyncClient` + `ForecastEngine`, injects via `Context[ServerSession, AppContext]`. Transports: `stdio` default, `streamable-http` optional (NOT pure SSE). **All logging to stderr** via `logging.basicConfig(stream=sys.stderr)` — zero `print()` in server process. Console script `shopify-forecast-mcp` with sync `main()` around `asyncio.run()`.
-2. **`forecast_revenue` tool** — `mcp/tools.py` with `@mcp.tool()` decorator, Pydantic `BaseModel` input (`horizon_days`, `context_days`, `frequency`, `include_chart_data`). Async handler: fetch orders → aggregate → forecast → return markdown string. Errors caught and returned as friendly markdown, never raised. `ctx.info()` / `ctx.report_progress()` during long ops.
-3. **`forecast_demand` tool** — extend `timeseries.py` group-by usage; input schema includes `group_by`, `group_value`, `metric`, `horizon_days`, `top_n`. Reorder alerts when projected demand > inventory (pull inventory via client).
-4. **CLI + end-to-end tests** — `cli.py` with subcommands `revenue` and `demand` (the other two CLI verbs arrive in Phase 5). Shares the core library, no MCP runtime import. `--json` flag for piping, markdown to stdout default. `tests/test_mcp_tools.py` end-to-end with mocked Shopify + real forecaster, plus Claude Desktop config snippet for manual validation.
+**Plan files:** 4 plans, 4 waves
+- [ ] 04-01-PLAN.md — FastMCP server skeleton with lifespan + AppContext (Wave 1)
+- [ ] 04-02-PLAN.md — forecast_revenue tool + tests (Wave 2)
+- [ ] 04-03-PLAN.md — forecast_demand tool + tests (Wave 3)
+- [ ] 04-04-PLAN.md — CLI subcommands + end-to-end tests (Wave 4)
 
 **Success criteria**:
 - `uvx shopify-forecast-mcp` launches under Claude Desktop; both tools appear in the tool list
