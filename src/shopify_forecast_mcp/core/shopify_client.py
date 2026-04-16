@@ -15,14 +15,21 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from pathlib import Path
 from typing import Any
 
 import httpx
 
 from shopify_forecast_mcp.config import Settings
+from shopify_forecast_mcp.core.cache import OrderCache
 from shopify_forecast_mcp.core.exceptions import (
     ShopifyGraphQLError,
     ShopifyThrottledError,
+)
+from shopify_forecast_mcp.core.normalize import (
+    filter_orders,
+    normalize_order,
+    strip_gid,
 )
 
 logger = logging.getLogger(__name__)
@@ -273,9 +280,13 @@ class ShopifyClient:
 
     _MAX_RETRIES: int = 3
 
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: Settings, cache_dir: Path | None = None) -> None:
         self._settings = settings
         self._shop_tz: str | None = None
+        self._cache = OrderCache(
+            cache_dir=cache_dir,
+            ttl=settings.forecast_cache_ttl,
+        )
         self._client = httpx.AsyncClient(
             base_url=f"https://{settings.shop}/admin/api/{settings.api_version}",
             headers={
@@ -458,3 +469,126 @@ class ShopifyClient:
         data = await self._post_graphql(SHOP_TIMEZONE_QUERY)
         self._shop_tz = data["data"]["shop"]["ianaTimezone"]
         return self._shop_tz
+
+    async def fetch_orders(
+        self,
+        start_date: str,
+        end_date: str,
+        *,
+        use_bulk: bool | None = None,
+    ) -> list[dict]:
+        """Fetch, normalize, filter, and cache orders for a date range.
+
+        Auto-selects paginated (default) or bulk path. Results are
+        normalized to a consistent dict shape, test/cancelled orders
+        are excluded, and the result is cached for ``forecast_cache_ttl``
+        seconds.
+
+        Args:
+            start_date: ISO date string (YYYY-MM-DD), inclusive.
+            end_date: ISO date string (YYYY-MM-DD), inclusive.
+            use_bulk: Force bulk (True) or paginated (False). None defaults
+                to paginated (bulk is opt-in for MVP).
+        """
+        # Check cache first
+        cached = self._cache.get(self._settings.shop, start_date, end_date)
+        if cached is not None:
+            logger.debug("Cache hit for %s..%s (%d orders)", start_date, end_date, len(cached))
+            return cached
+
+        # Determine fetch strategy
+        if use_bulk is True:
+            # Lazy import to avoid circular dependency (bulk_ops imports constants from this module)
+            from shopify_forecast_mcp.core.bulk_ops import fetch_orders_bulk
+
+            logger.info("Fetching orders via bulk path for %s..%s", start_date, end_date)
+            raw_orders = await fetch_orders_bulk(self, start_date, end_date)
+            source = "bulk"
+        else:
+            logger.info("Fetching orders via paginated path for %s..%s", start_date, end_date)
+            raw_orders = await self.fetch_orders_paginated(start_date, end_date)
+            source = "paginated"
+
+        # Normalize
+        tz_name = await self.fetch_shop_timezone()
+        normalized = [
+            normalize_order(o, tz_name, source=source) for o in raw_orders
+        ]
+
+        # Filter test and cancelled orders
+        filtered = filter_orders(normalized)
+
+        # Cache the result
+        self._cache.put(self._settings.shop, start_date, end_date, filtered)
+
+        return filtered
+
+    async def fetch_products(self) -> list[dict]:
+        """Fetch all products via cursor pagination.
+
+        Returns a list of product dicts with stripped GIDs.
+        """
+        products: list[dict] = []
+        cursor: str | None = None
+
+        for _ in range(100):  # Safety limit
+            variables: dict[str, Any] = {"after": cursor}
+            result = await self._post_graphql(PRODUCTS_QUERY, variables)
+            data = result["data"]["products"]
+
+            for edge in data["edges"]:
+                node = edge["node"]
+                product = {
+                    "id": strip_gid(node["id"]),
+                    "title": node.get("title", ""),
+                    "handle": node.get("handle", ""),
+                    "product_type": node.get("productType", ""),
+                    "vendor": node.get("vendor", ""),
+                    "tags": node.get("tags", []),
+                    "status": node.get("status", ""),
+                    "variants": [
+                        {
+                            "id": strip_gid(v["node"]["id"]),
+                            "sku": v["node"].get("sku", ""),
+                            "title": v["node"].get("title", ""),
+                            "price": v["node"].get("price", "0"),
+                        }
+                        for v in node.get("variants", {}).get("edges", [])
+                    ],
+                }
+                products.append(product)
+
+            if not data["pageInfo"]["hasNextPage"]:
+                break
+            cursor = data["pageInfo"]["endCursor"]
+
+        return products
+
+    async def fetch_collections(self) -> list[dict]:
+        """Fetch all collections via cursor pagination.
+
+        Returns a list of collection dicts with stripped GIDs.
+        """
+        collections: list[dict] = []
+        cursor: str | None = None
+
+        for _ in range(100):  # Safety limit
+            variables: dict[str, Any] = {"after": cursor}
+            result = await self._post_graphql(COLLECTIONS_QUERY, variables)
+            data = result["data"]["collections"]
+
+            for edge in data["edges"]:
+                node = edge["node"]
+                collection = {
+                    "id": strip_gid(node["id"]),
+                    "title": node.get("title", ""),
+                    "handle": node.get("handle", ""),
+                    "products_count": node.get("productsCount", 0),
+                }
+                collections.append(collection)
+
+            if not data["pageInfo"]["hasNextPage"]:
+                break
+            cursor = data["pageInfo"]["endCursor"]
+
+        return collections
