@@ -5,9 +5,9 @@ Living memory file. Updated at every phase transition.
 ## Current Status
 
 **Phase:** 4.1 — Shopify CLI Toolkit Integration
-**Current Plan:** 2 of 4 complete
-**Last completed:** 04.1-02 Refactor ShopifyClient + Optional Token (2026-04-16)
-**Next action:** Execute 04.1-03-PLAN.md
+**Current Plan:** 4 of 4 complete
+**Last completed:** 04.1-04 Test Infrastructure & CLI Integration (2026-04-16)
+**Next action:** Phase 4.1 complete; proceed to Phase 5
 
 ## Initialization
 
@@ -25,7 +25,7 @@ Living memory file. Updated at every phase transition.
 | 2 | Shopify Client | ✅ Complete (4/4 plans, 2026-04-16) |
 | 3 | Time-series & Forecaster | ✅ Complete (4/4 plans, 2026-04-16) |
 | 4 | MCP Server & CLI (MVP) | ✅ Complete (4/4 plans, 2026-04-16) |
-| 4.1 | Shopify CLI Toolkit Integration | ⏳ In Progress (2/4 plans) |
+| 4.1 | Shopify CLI Toolkit Integration | ✅ Complete (4/4 plans, 2026-04-16) |
 | 5 | Analytics & Covariates | ⏳ Pending |
 | 6 | Advanced Features | ⏳ Pending |
 | 7 | Distribution | ⏳ Pending |

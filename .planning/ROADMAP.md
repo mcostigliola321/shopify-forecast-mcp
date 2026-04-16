@@ -11,7 +11,7 @@ Each phase is buildable, testable, and demoable before the next begins. Phases 1
 - [x] **Phase 2: Shopify Client** — async GraphQL client with bulk ops, pagination, refund-aware normalization (completed 2026-04-16)
 - [ ] **Phase 3: Time-series & Forecaster** — aggregation pipeline and TimesFM 2.5 singleton wrapper
 - [x] **Phase 4: MCP Server Skeleton + CLI (MVP)** — FastMCP server, `forecast_revenue` + `forecast_demand`, CLI entry points (completed 2026-04-16)
-- [ ] **Phase 4.1: Shopify CLI Toolkit Integration** — dual-backend architecture (CLI primary, httpx fallback), browser OAuth
+- [x] **Phase 4.1: Shopify CLI Toolkit Integration** — dual-backend architecture (CLI primary, httpx fallback), browser OAuth (completed 2026-04-16)
 - [ ] **Phase 5: Analytics, Covariates & Remaining Tools** — analytics module, XReg behind flag, 4 more MCP tools
 - [ ] **Phase 6: Advanced Tools** — `compare_scenarios`, inventory-aware reorder, multi-store
 - [ ] **Phase 7: Distribution & Docs** — PyPI Trusted Publisher, Docker images, README/SETUP/TOOLS/ARCHITECTURE
@@ -106,13 +106,13 @@ Each phase is buildable, testable, and demoable before the next begins. Phases 1
 **Goal:** Replace httpx-based Shopify client internals with dual-backend architecture (Shopify CLI primary, httpx fallback). Browser OAuth replaces manual token setup. Public API of ShopifyClient unchanged.
 **Requirements**: CLI-BACKEND-PROTOCOL, CLI-BACKEND-IMPL, CLI-EXEC, CLI-EXCEPTIONS, CLI-REFACTOR-CLIENT, CLI-REFACTOR-BULK, CLI-CONFIG-OPTIONAL-TOKEN, CLI-AUTH-COMMAND, CLI-STARTUP-DETECTION, CLI-TEST-FIXTURES, CLI-TEST-ADAPTATION, CLI-INTEGRATION-TEST
 **Depends on:** Phase 4
-**Plans:** 1/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [x] 04.1-01-PLAN.md — Backend protocol + CliBackend + DirectBackend + factory (Wave 1)
-- [ ] 04.1-02-PLAN.md — Refactor ShopifyClient + bulk_ops to use backend (Wave 2)
-- [ ] 04.1-03-PLAN.md — Auth CLI command + startup detection (Wave 3)
-- [ ] 04.1-04-PLAN.md — Test updates + integration smoke test (Wave 3, parallel with 04.1-03)
+- [x] 04.1-02-PLAN.md — Refactor ShopifyClient + bulk_ops to use backend (Wave 2)
+- [x] 04.1-03-PLAN.md — Auth CLI command + startup detection (Wave 3)
+- [x] 04.1-04-PLAN.md — Test updates + integration smoke test (Wave 3, parallel with 04.1-03)
 
 **Success criteria**:
 - `create_backend(settings)` returns DirectBackend when token set, CliBackend when CLI on PATH
