@@ -86,7 +86,10 @@ asyncio_mode = "strict"
 testpaths = ["tests"]
 addopts = "-ra --strict-markers --strict-config"
 pythonpath = ["src"]
-markers = ["slow: marks tests as slow (deselect with '-m \"not slow\"')"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests requiring external services (deselect with '-m \"not integration\"')",
+]
 
 [tool.ruff]
 line-length = 100
