@@ -6,6 +6,8 @@ import argparse
 import asyncio
 import json
 import logging
+import shutil
+import subprocess
 import sys
 from datetime import date, timedelta
 
@@ -16,7 +18,7 @@ from shopify_forecast_mcp.config import get_settings
 from shopify_forecast_mcp.core.forecast_result import ForecastResult
 from shopify_forecast_mcp.core.forecaster import get_engine
 from shopify_forecast_mcp.core.shopify_backend import create_backend
-from shopify_forecast_mcp.core.shopify_client import ShopifyClient
+from shopify_forecast_mcp.core.shopify_client import REQUIRED_SCOPES, ShopifyClient
 from shopify_forecast_mcp.core.timeseries import (
     clean_series,
     orders_to_daily_series,
@@ -56,6 +58,10 @@ def build_parser() -> argparse.ArgumentParser:
     dem.add_argument("--horizon", type=int, default=30)
     dem.add_argument("--top-n", type=int, default=10)
     dem.add_argument("--json", action="store_true", dest="json_output")
+
+    # -- auth subcommand --
+    auth_p = sub.add_parser("auth", help="Authenticate with Shopify via browser OAuth")
+    auth_p.add_argument("--store", required=True, help="mystore.myshopify.com")
 
     return parser
 
@@ -187,6 +193,64 @@ async def _run_demand(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_auth(args: argparse.Namespace) -> int:
+    """Authenticate with Shopify via the Shopify CLI browser OAuth flow."""
+    store = args.store
+
+    # Check CLI is available
+    if shutil.which("shopify") is None:
+        print(
+            "Error: Shopify CLI not found on PATH.\n"
+            "Install it with: npm install -g @shopify/cli\n"
+            "Or see: https://shopify.dev/docs/api/shopify-cli",
+            file=sys.stderr,
+        )
+        return 1
+
+    scopes = ",".join(REQUIRED_SCOPES)
+    log.info("Authenticating with store %s (scopes: %s)", store, scopes)
+
+    # Run shopify store auth
+    result = subprocess.run(
+        ["shopify", "store", "auth", "--store", store, "--scopes", scopes],
+        capture_output=False,  # Let the user see the browser prompt
+    )
+
+    if result.returncode != 0:
+        print("Error: shopify store auth failed.", file=sys.stderr)
+        return 1
+
+    # Verify auth by running a quick query
+    log.info("Verifying authentication...")
+    verify = subprocess.run(
+        [
+            "shopify", "store", "execute",
+            "--store", store,
+            "--json",
+            "--query", "{ shop { ianaTimezone } }",
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+    if verify.returncode != 0:
+        print(
+            f"Warning: Auth succeeded but verification query failed:\n{verify.stderr}",
+            file=sys.stderr,
+        )
+        return 1
+
+    try:
+        data = json.loads(verify.stdout)
+        tz = data["data"]["shop"]["ianaTimezone"]
+        print(f"Authenticated successfully! Store timezone: {tz}")
+    except (json.JSONDecodeError, KeyError):
+        print("Warning: Auth may have succeeded but could not parse verification response.", file=sys.stderr)
+        return 1
+
+    return 0
+
+
 def main() -> int:
     """Sync entry point for the shopify-forecast console script."""
     parser = build_parser()
@@ -196,7 +260,9 @@ def main() -> int:
         parser.print_help()
         return 0
 
-    if args.command == "revenue":
+    if args.command == "auth":
+        return _run_auth(args)
+    elif args.command == "revenue":
         return asyncio.run(_run_revenue(args))
     elif args.command == "demand":
         return asyncio.run(_run_demand(args))
