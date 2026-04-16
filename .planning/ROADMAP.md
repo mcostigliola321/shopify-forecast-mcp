@@ -86,7 +86,7 @@ Each phase is buildable, testable, and demoable before the next begins. Phases 1
 **Plan files:** 4 plans, 4 waves
 - [x] 04-01-PLAN.md — FastMCP server skeleton with lifespan + AppContext (Wave 1)
 - [x] 04-02-PLAN.md — forecast_revenue tool + tests (Wave 2)
-- [ ] 04-03-PLAN.md — forecast_demand tool + tests (Wave 3)
+- [x] 04-03-PLAN.md — forecast_demand tool + tests (Wave 3)
 - [ ] 04-04-PLAN.md — CLI subcommands + end-to-end tests (Wave 4)
 
 **Success criteria**:
