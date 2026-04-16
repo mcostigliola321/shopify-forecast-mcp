@@ -4,10 +4,10 @@ Living memory file. Updated at every phase transition.
 
 ## Current Status
 
-**Phase:** 4 — MCP Server & CLI (MVP)
-**Current Plan:** 4 of 4 complete
-**Last completed:** 04-04 CLI subcommands (2026-04-16)
-**Next action:** Phase 4 complete. Begin Phase 5 planning.
+**Phase:** 4.1 — Shopify CLI Toolkit Integration
+**Current Plan:** 1 of 4 complete
+**Last completed:** 04.1-01 Backend Protocol & Implementations (2026-04-16)
+**Next action:** Execute 04.1-02-PLAN.md (Refactor ShopifyClient to accept backend)
 
 ## Initialization
 
@@ -25,9 +25,14 @@ Living memory file. Updated at every phase transition.
 | 2 | Shopify Client | ✅ Complete (4/4 plans, 2026-04-16) |
 | 3 | Time-series & Forecaster | ✅ Complete (4/4 plans, 2026-04-16) |
 | 4 | MCP Server & CLI (MVP) | ✅ Complete (4/4 plans, 2026-04-16) |
+| 4.1 | Shopify CLI Toolkit Integration | ⏳ In Progress (1/4 plans) |
 | 5 | Analytics & Covariates | ⏳ Pending |
 | 6 | Advanced Features | ⏳ Pending |
 | 7 | Distribution | ⏳ Pending |
+
+## Roadmap Evolution
+
+- Phase 4.1 inserted after Phase 4: Shopify CLI Toolkit Integration (URGENT) — Replace httpx Shopify client with `shopify store execute` backend, browser OAuth via `shopify store auth`. Design spec: `docs/superpowers/specs/2026-04-16-shopify-cli-integration-design.md`
 
 ## Open Risks
 
