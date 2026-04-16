@@ -1,0 +1,386 @@
+{
+  "page1": {
+    "data": {
+      "orders": {
+        "pageInfo": {
+          "hasNextPage": true,
+          "endCursor": "eyJsYXN0X2lkIjo1fQ=="
+        },
+        "edges": [
+          {
+            "node": {
+              "id": "gid://shopify/Order/1001",
+              "createdAt": "2025-06-15T14:30:00Z",
+              "displayFinancialStatus": "PAID",
+              "subtotalPriceSet": {
+                "shopMoney": { "amount": "150.00", "currencyCode": "USD" }
+              },
+              "currentSubtotalPriceSet": {
+                "shopMoney": { "amount": "150.00", "currencyCode": "USD" }
+              },
+              "totalDiscountsSet": {
+                "shopMoney": { "amount": "0.00", "currencyCode": "USD" }
+              },
+              "totalRefundedSet": {
+                "shopMoney": { "amount": "0.00", "currencyCode": "USD" }
+              },
+              "netPaymentSet": {
+                "shopMoney": { "amount": "150.00", "currencyCode": "USD" }
+              },
+              "discountCodes": [],
+              "tags": ["vip", "returning"],
+              "sourceName": "web",
+              "test": false,
+              "cancelledAt": null,
+              "lineItems": {
+                "edges": [
+                  {
+                    "node": {
+                      "id": "gid://shopify/LineItem/2001",
+                      "title": "Classic T-Shirt",
+                      "quantity": 2,
+                      "currentQuantity": 2,
+                      "originalUnitPriceSet": {
+                        "shopMoney": { "amount": "50.00", "currencyCode": "USD" }
+                      },
+                      "product": {
+                        "id": "gid://shopify/Product/3001",
+                        "title": "Classic T-Shirt"
+                      },
+                      "variant": {
+                        "id": "gid://shopify/ProductVariant/4001",
+                        "sku": "TSHIRT-BLK-M",
+                        "title": "Black / Medium"
+                      }
+                    }
+                  },
+                  {
+                    "node": {
+                      "id": "gid://shopify/LineItem/2002",
+                      "title": "Baseball Cap",
+                      "quantity": 1,
+                      "currentQuantity": 1,
+                      "originalUnitPriceSet": {
+                        "shopMoney": { "amount": "50.00", "currencyCode": "USD" }
+                      },
+                      "product": {
+                        "id": "gid://shopify/Product/3002",
+                        "title": "Baseball Cap"
+                      },
+                      "variant": {
+                        "id": "gid://shopify/ProductVariant/4002",
+                        "sku": "CAP-RED",
+                        "title": "Red"
+                      }
+                    }
+                  }
+                ]
+              },
+              "refunds": []
+            }
+          },
+          {
+            "node": {
+              "id": "gid://shopify/Order/1002",
+              "createdAt": "2025-06-15T23:30:00Z",
+              "displayFinancialStatus": "PAID",
+              "subtotalPriceSet": {
+                "shopMoney": { "amount": "100.00", "currencyCode": "USD" }
+              },
+              "currentSubtotalPriceSet": {
+                "shopMoney": { "amount": "75.00", "currencyCode": "USD" }
+              },
+              "totalDiscountsSet": {
+                "shopMoney": { "amount": "0.00", "currencyCode": "USD" }
+              },
+              "totalRefundedSet": {
+                "shopMoney": { "amount": "25.00", "currencyCode": "USD" }
+              },
+              "netPaymentSet": {
+                "shopMoney": { "amount": "75.00", "currencyCode": "USD" }
+              },
+              "discountCodes": [],
+              "tags": [],
+              "sourceName": "web",
+              "test": false,
+              "cancelledAt": null,
+              "lineItems": {
+                "edges": [
+                  {
+                    "node": {
+                      "id": "gid://shopify/LineItem/2003",
+                      "title": "Premium Hoodie",
+                      "quantity": 2,
+                      "currentQuantity": 1,
+                      "originalUnitPriceSet": {
+                        "shopMoney": { "amount": "50.00", "currencyCode": "USD" }
+                      },
+                      "product": {
+                        "id": "gid://shopify/Product/3003",
+                        "title": "Premium Hoodie"
+                      },
+                      "variant": {
+                        "id": "gid://shopify/ProductVariant/4003",
+                        "sku": "HOODIE-GRY-L",
+                        "title": "Grey / Large"
+                      }
+                    }
+                  }
+                ]
+              },
+              "refunds": [
+                {
+                  "id": "gid://shopify/Refund/5001",
+                  "createdAt": "2025-06-17T10:00:00Z",
+                  "refundLineItems": {
+                    "edges": [
+                      {
+                        "node": {
+                          "lineItem": { "id": "gid://shopify/LineItem/2003" },
+                          "quantity": 1,
+                          "subtotalSet": {
+                            "shopMoney": { "amount": "25.00", "currencyCode": "USD" }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "node": {
+              "id": "gid://shopify/Order/1003",
+              "createdAt": "2025-06-16T03:30:00Z",
+              "displayFinancialStatus": "PAID",
+              "subtotalPriceSet": {
+                "shopMoney": { "amount": "200.00", "currencyCode": "USD" }
+              },
+              "currentSubtotalPriceSet": {
+                "shopMoney": { "amount": "190.00", "currencyCode": "USD" }
+              },
+              "totalDiscountsSet": {
+                "shopMoney": { "amount": "10.00", "currencyCode": "USD" }
+              },
+              "totalRefundedSet": {
+                "shopMoney": { "amount": "0.00", "currencyCode": "USD" }
+              },
+              "netPaymentSet": {
+                "shopMoney": { "amount": "190.00", "currencyCode": "USD" }
+              },
+              "discountCodes": ["SUMMER10"],
+              "tags": [],
+              "sourceName": "pos",
+              "test": false,
+              "cancelledAt": null,
+              "lineItems": {
+                "edges": [
+                  {
+                    "node": {
+                      "id": "gid://shopify/LineItem/2004",
+                      "title": "Running Shoes",
+                      "quantity": 1,
+                      "currentQuantity": 1,
+                      "originalUnitPriceSet": {
+                        "shopMoney": { "amount": "120.00", "currencyCode": "USD" }
+                      },
+                      "product": {
+                        "id": "gid://shopify/Product/3004",
+                        "title": "Running Shoes"
+                      },
+                      "variant": {
+                        "id": "gid://shopify/ProductVariant/4004",
+                        "sku": "SHOE-BLU-10",
+                        "title": "Blue / Size 10"
+                      }
+                    }
+                  },
+                  {
+                    "node": {
+                      "id": "gid://shopify/LineItem/2005",
+                      "title": "Athletic Socks 3-Pack",
+                      "quantity": 2,
+                      "currentQuantity": 2,
+                      "originalUnitPriceSet": {
+                        "shopMoney": { "amount": "15.00", "currencyCode": "USD" }
+                      },
+                      "product": {
+                        "id": "gid://shopify/Product/3005",
+                        "title": "Athletic Socks 3-Pack"
+                      },
+                      "variant": {
+                        "id": "gid://shopify/ProductVariant/4005",
+                        "sku": "SOCK-WHT",
+                        "title": "White"
+                      }
+                    }
+                  },
+                  {
+                    "node": {
+                      "id": "gid://shopify/LineItem/2006",
+                      "title": "Water Bottle",
+                      "quantity": 1,
+                      "currentQuantity": 1,
+                      "originalUnitPriceSet": {
+                        "shopMoney": { "amount": "50.00", "currencyCode": "USD" }
+                      },
+                      "product": {
+                        "id": "gid://shopify/Product/3006",
+                        "title": "Water Bottle"
+                      },
+                      "variant": {
+                        "id": "gid://shopify/ProductVariant/4006",
+                        "sku": "BOTTLE-SS",
+                        "title": "Stainless Steel"
+                      }
+                    }
+                  }
+                ]
+              },
+              "refunds": []
+            }
+          }
+        ]
+      }
+    },
+    "extensions": {
+      "cost": {
+        "requestedQueryCost": 52,
+        "actualQueryCost": 28,
+        "throttleStatus": {
+          "maximumAvailable": 2000.0,
+          "currentlyAvailable": 1972.0,
+          "restoreRate": 100.0
+        }
+      }
+    }
+  },
+  "page2": {
+    "data": {
+      "orders": {
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": null
+        },
+        "edges": [
+          {
+            "node": {
+              "id": "gid://shopify/Order/1004",
+              "createdAt": "2025-06-16T10:00:00Z",
+              "displayFinancialStatus": "PAID",
+              "subtotalPriceSet": {
+                "shopMoney": { "amount": "35.00", "currencyCode": "USD" }
+              },
+              "currentSubtotalPriceSet": {
+                "shopMoney": { "amount": "35.00", "currencyCode": "USD" }
+              },
+              "totalDiscountsSet": {
+                "shopMoney": { "amount": "0.00", "currencyCode": "USD" }
+              },
+              "totalRefundedSet": {
+                "shopMoney": { "amount": "0.00", "currencyCode": "USD" }
+              },
+              "netPaymentSet": {
+                "shopMoney": { "amount": "35.00", "currencyCode": "USD" }
+              },
+              "discountCodes": [],
+              "tags": ["returning"],
+              "sourceName": "web",
+              "test": false,
+              "cancelledAt": null,
+              "lineItems": {
+                "edges": [
+                  {
+                    "node": {
+                      "id": "gid://shopify/LineItem/2007",
+                      "title": "Phone Case",
+                      "quantity": 1,
+                      "currentQuantity": 1,
+                      "originalUnitPriceSet": {
+                        "shopMoney": { "amount": "35.00", "currencyCode": "USD" }
+                      },
+                      "product": {
+                        "id": "gid://shopify/Product/3007",
+                        "title": "Phone Case"
+                      },
+                      "variant": {
+                        "id": "gid://shopify/ProductVariant/4007",
+                        "sku": "CASE-CLR",
+                        "title": "Clear"
+                      }
+                    }
+                  }
+                ]
+              },
+              "refunds": []
+            }
+          },
+          {
+            "node": {
+              "id": "gid://shopify/Order/1005",
+              "createdAt": "2025-06-16T11:00:00Z",
+              "displayFinancialStatus": "PAID",
+              "subtotalPriceSet": {
+                "shopMoney": { "amount": "10.00", "currencyCode": "USD" }
+              },
+              "currentSubtotalPriceSet": {
+                "shopMoney": { "amount": "10.00", "currencyCode": "USD" }
+              },
+              "totalDiscountsSet": {
+                "shopMoney": { "amount": "0.00", "currencyCode": "USD" }
+              },
+              "totalRefundedSet": {
+                "shopMoney": { "amount": "0.00", "currencyCode": "USD" }
+              },
+              "netPaymentSet": {
+                "shopMoney": { "amount": "10.00", "currencyCode": "USD" }
+              },
+              "discountCodes": [],
+              "tags": [],
+              "sourceName": "web",
+              "test": true,
+              "cancelledAt": null,
+              "lineItems": {
+                "edges": [
+                  {
+                    "node": {
+                      "id": "gid://shopify/LineItem/2008",
+                      "title": "Test Product",
+                      "quantity": 1,
+                      "currentQuantity": 1,
+                      "originalUnitPriceSet": {
+                        "shopMoney": { "amount": "10.00", "currencyCode": "USD" }
+                      },
+                      "product": {
+                        "id": "gid://shopify/Product/3008",
+                        "title": "Test Product"
+                      },
+                      "variant": {
+                        "id": "gid://shopify/ProductVariant/4008",
+                        "sku": "TEST-001",
+                        "title": "Default"
+                      }
+                    }
+                  }
+                ]
+              },
+              "refunds": []
+            }
+          }
+        ]
+      }
+    },
+    "extensions": {
+      "cost": {
+        "requestedQueryCost": 52,
+        "actualQueryCost": 18,
+        "throttleStatus": {
+          "maximumAvailable": 2000.0,
+          "currentlyAvailable": 1954.0,
+          "restoreRate": 100.0
+        }
+      }
+    }
+  }
+}
