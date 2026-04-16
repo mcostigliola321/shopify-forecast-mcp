@@ -5,9 +5,9 @@ Living memory file. Updated at every phase transition.
 ## Current Status
 
 **Phase:** 3 — Time-series & Forecaster (in progress)
-**Current Plan:** 1 of 4 complete
-**Last completed:** 03-01 Daily time-series aggregation (2026-04-16)
-**Next action:** Execute 03-02 plan
+**Current Plan:** 2 of 4 complete
+**Last completed:** 03-02 Resample & clean series (2026-04-16)
+**Next action:** Execute 03-03 plan
 
 ## Initialization
 
@@ -23,7 +23,7 @@ Living memory file. Updated at every phase transition.
 |---|---|---|
 | 1 | Scaffold & Packaging | ✅ Complete (CI green 2026-04-15) |
 | 2 | Shopify Client | ✅ Complete (4/4 plans, 2026-04-16) |
-| 3 | Time-series & Forecaster | 🔄 In Progress (1/4 plans) |
+| 3 | Time-series & Forecaster | 🔄 In Progress (2/4 plans) |
 | 4 | MCP Server & CLI (MVP) | ⏳ Pending |
 | 5 | Analytics & Covariates | ⏳ Pending |
 | 6 | Advanced Features | ⏳ Pending |

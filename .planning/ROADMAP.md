@@ -8,7 +8,7 @@ Each phase is buildable, testable, and demoable before the next begins. Phases 1
 ## Phases
 
 - [x] **Phase 1: Scaffold & Config** — `uv` package layout, pyproject, config loader, smoke CI (completed 2026-04-13)
-- [ ] **Phase 2: Shopify Client** — async GraphQL client with bulk ops, pagination, refund-aware normalization
+- [x] **Phase 2: Shopify Client** — async GraphQL client with bulk ops, pagination, refund-aware normalization (completed 2026-04-16)
 - [ ] **Phase 3: Time-series & Forecaster** — aggregation pipeline and TimesFM 2.5 singleton wrapper
 - [ ] **Phase 4: MCP Server Skeleton + CLI (MVP)** — FastMCP server, `forecast_revenue` + `forecast_demand`, CLI entry points
 - [ ] **Phase 5: Analytics, Covariates & Remaining Tools** — analytics module, XReg behind flag, 4 more MCP tools
@@ -43,12 +43,6 @@ Each phase is buildable, testable, and demoable before the next begins. Phases 1
 **Goal**: Given credentials, fetch a year of normalized orders (refund-aware, test-order-filtered, timezone-bucketed) via paginated OR bulk path.
 **Depends on**: Phase 1
 **Requirements**: R2.1, R2.2, R2.3, R2.4, R2.5, R2.6, R2.7, R2.8, R2.9, R2.10, R2.11, R2.12, R10.5 (mocking infra)
-**Plans**:
-1. **HTTP client + auth + schema constants** — `core/shopify_client.py` with `httpx.AsyncClient`, `X-Shopify-Access-Token` header, API version **`2026-04`**, endpoint `/admin/api/2026-04/graphql.json`. Document required scopes: `read_orders`, **`read_all_orders`**, `read_products`, `read_inventory`.
-2. **Paginated orders query** — small-fetch path (<10k orders) using `orders(first: 250, after: $cursor)` with `displayFinancialStatus` (NOT `financialStatus`), `subtotalPriceSet.shopMoney`, line items, refunds, `test`, `cancelledAt`. Parse `extensions.cost.throttleStatus` and exponentially back off on THROTTLED.
-3. **Bulk operations path** — `bulkOperationRunQuery` → poll `bulkOperation(id: $id)` every 2s → download JSONL → reconstruct nested children via `__parentId`. Honor 1hr URL expiry. Default path for >10k orders.
-4. **Normalization & caching** — GID stripping, refund-aware net revenue and net quantity at line-item ID level, exclude draft/test/cancelled orders, fetch shop `ianaTimezone` once and bucket `createdAt` into local-time days. `fetch_orders/products/collections` wrappers. Local file cache keyed by date range with `forecast_cache_ttl`. Tests via `respx` with fixture GraphQL responses (paginated + bulk JSONL).
-
 **Plan files:** 4 plans, 3 waves
 - [x] 02-01-PLAN.md — HTTP client + auth + schema constants (Wave 1)
 - [x] 02-02-PLAN.md — Paginated orders query (Wave 2)
@@ -69,11 +63,11 @@ Each phase is buildable, testable, and demoable before the next begins. Phases 1
 **Goal**: Orders in → `ForecastResult` out, with a singleton TimesFM 2.5 model and univariate inference validated on sine-wave + fixture data.
 **Depends on**: Phase 2 (for fixture shape)
 **Requirements**: R3.1, R3.2, R3.3, R3.4, R3.5, R3.6, R4.1, R4.2, R4.3, R4.4, R4.5, R4.6, R4.7, R4.8, R4.9, R4.10, R4.11, R10.2, R10.3, R10.6
-**Plans**:
-1. **Time-series aggregation** — `core/timeseries.py`: `orders_to_daily_series(orders, metric, group_by)` returning `pd.Series` with `DatetimeIndex`, zero-filled gaps (not NaN). Metrics: revenue, orders, units, aov. Group-by: None/product/collection/sku. Line-item-level refund accounting.
-2. **Resample & clean** — `resample_series(series, freq)` for D/W/M with correct aggregator per metric (sum vs. mean for AOV); `clean_series` with IQR/zscore outlier capping that never drops points (TimesFM needs continuity).
-3. **TimesFM engine** — `core/forecaster.py` `ForecastEngine` class wrapping `TimesFM_2p5_200M_torch.from_pretrained(...)`, singleton pattern, `torch.set_float32_matmul_precision("high")` at init, device = cuda | cpu (**no `mps` branch**), first-run download log line. `model.compile(ForecastConfig(max_context=1024, max_horizon=256, normalize_inputs=True, use_continuous_quantile_head=True, force_flip_invariance=True, infer_is_positive=True, fix_quantile_crossing=True))`.
-4. **ForecastResult + tests** — dataclass with `point_forecast`, `quantile_forecast` (channels `[mean, q10..q90]` — channel 0 is **mean** not q10), `dates`, `confidence_bands`, `metadata`. `to_table()` markdown method, `summary()` natural-language method. Fixture data: 1yr of daily orders (~5k orders, 3–4 collections, holiday spike, summer dip, 2–3 promos, refunds). Sine-wave smoke test runs first, then fixture tests.
+**Plans:** 4 plans, 3 waves
+- [x] 03-01-PLAN.md — Time-series aggregation: orders_to_daily_series (Wave 1)
+- [x] 03-02-PLAN.md — Resample & clean: resample_series, clean_series (Wave 1, parallel with 03-01)
+- [ ] 03-03-PLAN.md — TimesFM engine: ForecastEngine singleton + sine-wave test (Wave 2)
+- [ ] 03-04-PLAN.md — ForecastResult dataclass + fixture data + integration tests (Wave 3)
 
 **Success criteria**:
 - Sine-wave forecast recovers the known period within quantile band
