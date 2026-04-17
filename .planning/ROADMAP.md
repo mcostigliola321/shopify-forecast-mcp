@@ -128,11 +128,12 @@ Plans:
 **Goal**: Five more MCP tools (`analyze_promotion`, `detect_anomalies`, `compare_periods`, `get_seasonality`) plus XReg covariates behind a feature flag, plus the remaining CLI verbs.
 **Depends on**: Phase 4
 **Requirements**: R5.1, R5.2, R5.3, R5.4, R5.5, R5.6, R6.1, R6.2, R6.3, R6.4, R8.3, R8.4, R8.5, R8.7, R9.2 (promo/compare verbs)
-**Plans**:
-1. **Analytics module** — `core/analytics.py`: `analyze_promotion`, `detect_anomalies` (use mean + quantile bands — channel 0 = mean discipline from Phase 3), `compare_periods` (YoY/MoM per metric), `cohort_retention`. Unit tests with fixture data.
-2. **Covariate engineering (feature-flagged)** — `core/covariates.py`: `build_covariates` with `day_of_week`, `is_weekend`, `month`, `is_holiday` (60+ countries via `holidays`), `holiday_proximity` (-7/+3), `has_discount`, `discount_depth`, custom events. `build_future_covariates` for horizon window.
-3. **Wire XReg into forecaster** — use `model.forecast_with_covariates()` (separate method, not flat dict on `forecast()`), dynamic numerical covariates as `Sequence[Sequence[float]]` of length `context_len + horizon` per series. Off by default; opt-in tool param. Document marginal value caveat from research.
-4. **Four analytics MCP tools + CLI verbs** — `analyze_promotion`, `detect_anomalies`, `compare_periods`, `get_seasonality` via `@mcp.tool()`, each returning markdown tables and a natural-language summary. CLI subcommands `promo` and `compare`. End-to-end fixture tests per tool.
+**Plans:** 3 plans, 2 waves
+
+Plans:
+- [ ] 05-01-PLAN.md — Core analytics module: metrics infrastructure, AnalyticsResult, 5 analytics functions, normalize customer_id (Wave 1)
+- [ ] 05-02-PLAN.md — Covariate engineering module + XReg wiring into ForecastEngine + feature flag (Wave 1, parallel with 05-01)
+- [ ] 05-03-PLAN.md — 4 MCP tool handlers + CLI promo/compare verbs (Wave 2, depends on 05-01 + 05-02)
 
 **Success criteria**:
 - `analyze_promotion` on the fixture promo window returns sensible lift, AOV change, and hangover estimate
