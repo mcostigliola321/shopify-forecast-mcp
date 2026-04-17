@@ -18,7 +18,7 @@ from shopify_forecast_mcp.config import get_settings
 from shopify_forecast_mcp.core.forecast_result import ForecastResult
 from shopify_forecast_mcp.core.forecaster import get_engine
 from shopify_forecast_mcp.core.shopify_backend import create_backend
-from shopify_forecast_mcp.core.shopify_client import REQUIRED_SCOPES, ShopifyClient
+from shopify_forecast_mcp.core.shopify_client import CLI_AUTH_SCOPES, REQUIRED_SCOPES, ShopifyClient
 from shopify_forecast_mcp.core.timeseries import (
     clean_series,
     orders_to_daily_series,
@@ -207,8 +207,16 @@ def _run_auth(args: argparse.Namespace) -> int:
         )
         return 1
 
-    scopes = ",".join(REQUIRED_SCOPES)
+    scopes = ",".join(CLI_AUTH_SCOPES)
     log.info("Authenticating with store %s (scopes: %s)", store, scopes)
+
+    print(
+        "\nNote: CLI OAuth cannot grant 'read_all_orders' (protected scope).\n"
+        "Order history will be limited to the last 60 days.\n"
+        "For full history, create a custom app in Shopify admin and set\n"
+        "SHOPIFY_FORECAST_ACCESS_TOKEN in your .env file.\n",
+        file=sys.stderr,
+    )
 
     # Run shopify store auth
     result = subprocess.run(

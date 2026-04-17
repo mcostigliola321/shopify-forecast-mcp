@@ -36,10 +36,22 @@ REQUIRED_SCOPES: tuple[str, ...] = (
     "read_products",
     "read_inventory",
 )
-"""Required Shopify Admin API access scopes.
+"""Required Shopify Admin API access scopes for custom app tokens.
 
-``read_all_orders`` is mandatory -- without it the API only returns
-orders from the last 60 days, which is insufficient for forecasting.
+``read_all_orders`` is mandatory for full history -- without it the API
+only returns orders from the last 60 days.
+"""
+
+CLI_AUTH_SCOPES: tuple[str, ...] = (
+    "read_orders",
+    "read_products",
+    "read_inventory",
+)
+"""Scopes available via Shopify CLI OAuth.
+
+``read_all_orders`` is a protected scope that cannot be granted via CLI
+OAuth -- it requires a custom app created in the Shopify admin. CLI auth
+is limited to the last 60 days of order history.
 """
 
 # ---------------------------------------------------------------------------

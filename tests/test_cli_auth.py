@@ -52,7 +52,7 @@ class TestAuthSubcommand:
         scopes_idx = cmd.index("--scopes")
         scopes_str = cmd[scopes_idx + 1]
         assert "read_orders" in scopes_str
-        assert "read_all_orders" in scopes_str
+        assert "read_all_orders" not in scopes_str  # protected scope, not available via CLI OAuth
         assert "read_products" in scopes_str
         assert "read_inventory" in scopes_str
 

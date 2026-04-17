@@ -216,24 +216,37 @@ class CliBackend:
     async def post_graphql(
         self, query: str, variables: dict | None = None
     ) -> dict:
-        """Execute a GraphQL query via the Shopify CLI."""
-        return await execute_graphql(
+        """Execute a GraphQL query via the Shopify CLI.
+
+        The CLI returns the GraphQL response without the ``{"data": ...}``
+        wrapper that the raw API uses.  We re-wrap it so the rest of the
+        codebase can use ``result["data"]["orders"]`` uniformly regardless
+        of backend.
+        """
+        raw = await execute_graphql(
             store=self._store,
             query=query,
             variables=variables,
             allow_mutations=False,
         )
+        # CLI already strips the "data" envelope — re-add it for parity
+        if "data" not in raw:
+            raw = {"data": raw}
+        return raw
 
     async def post_graphql_mutation(
         self, query: str, variables: dict | None = None
     ) -> dict:
         """Execute a GraphQL mutation via the Shopify CLI."""
-        return await execute_graphql(
+        raw = await execute_graphql(
             store=self._store,
             query=query,
             variables=variables,
             allow_mutations=True,
         )
+        if "data" not in raw:
+            raw = {"data": raw}
+        return raw
 
     async def download_url(self, url: str) -> bytes:
         """Download a signed URL and return the raw bytes.
