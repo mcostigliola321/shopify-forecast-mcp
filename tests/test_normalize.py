@@ -215,7 +215,7 @@ class TestNormalizeOrder:
             "subtotal", "current_subtotal", "total_discounts",
             "total_refunded", "net_payment", "currency",
             "discount_codes", "tags", "source_name", "test",
-            "cancelled_at", "line_items",
+            "cancelled_at", "line_items", "customer_id",
         }
         assert set(result.keys()) == expected_keys
 

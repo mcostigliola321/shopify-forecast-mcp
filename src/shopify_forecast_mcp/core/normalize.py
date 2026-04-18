@@ -162,11 +162,17 @@ def normalize_order(
         for li in order_node.get("line_items", []):
             line_items.append(normalize_line_item(li, refund_map=None))
 
+    # Extract customer_id for cohort analysis (R6.4)
+    customer = order_node.get("customer") or {}
+    raw_customer_id = customer.get("id", "")
+    customer_id = strip_gid(raw_customer_id) if raw_customer_id else "unknown"
+
     return {
         "id": strip_gid(order_node["id"]),
         "created_at": order_node["createdAt"],
         "local_date": utc_to_local_date(order_node["createdAt"], tz_name),
         "financial_status": order_node.get("displayFinancialStatus", "UNKNOWN"),
+        "customer_id": customer_id,
         "subtotal": _safe_float(
             order_node.get("subtotalPriceSet", {}).get("shopMoney", {}).get("amount")
         ),

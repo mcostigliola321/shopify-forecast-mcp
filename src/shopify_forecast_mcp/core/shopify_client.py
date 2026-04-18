@@ -100,6 +100,7 @@ query FetchOrders($first: Int!, $after: String, $query: String) {
         sourceName
         test
         cancelledAt
+        customer { id }
         lineItems(first: 50) {
           edges {
             node {
@@ -164,6 +165,7 @@ BULK_ORDERS_INNER_QUERY = """\
         sourceName
         test
         cancelledAt
+        customer { id }
         lineItems {
           edges {
             node {

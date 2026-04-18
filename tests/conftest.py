@@ -7,6 +7,7 @@ reusable ``Settings`` / ``ShopifyClient`` factory fixtures.
 from __future__ import annotations
 
 import json
+from datetime import datetime, timedelta
 
 import httpx
 import pytest
@@ -267,6 +268,9 @@ def _make_order(
     created_at: str,
     local_date: str,
     line_items: list[dict],
+    *,
+    discount_codes: list[dict] | None = None,
+    customer_id: str = "unknown",
 ) -> dict:
     """Helper to build a normalized order dict with sensible defaults."""
     return {
@@ -280,11 +284,12 @@ def _make_order(
         "total_refunded": sum(li["refund_amount"] for li in line_items),
         "net_payment": sum(li["net_revenue"] for li in line_items),
         "currency": "USD",
-        "discount_codes": [],
+        "discount_codes": discount_codes or [],
         "tags": [],
         "source_name": "",
         "test": False,
         "cancelled_at": None,
+        "customer_id": customer_id,
         "line_items": line_items,
     }
 
@@ -368,3 +373,84 @@ def normalized_orders() -> list[dict]:
             _make_line_item("5012", "P1", "SKU-A", 2, 10.0),           # net_rev=20, net_qty=2
         ]),
     ]
+
+
+# ---------------------------------------------------------------------------
+# Extended fixture for analytics tests (promos, customers, 120+ days)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def sample_orders_with_promos() -> list[dict]:
+    """Normalized orders spanning 120+ days with promo period, customers, and products.
+
+    Timeline: 2025-03-01 to 2025-06-30 (122 days)
+    Baseline period: days 30-59 (2025-03-31 to 2025-04-29)
+    Promo period: days 60-67 (2025-04-30 to 2025-05-07) -- higher volume, discount codes
+    Post-promo: days 68-75 (2025-05-08 to 2025-05-15) -- hangover dip
+    Customers: C1, C2, C3 (for cohort testing)
+    Products: P1, P2 (for cannibalization)
+    """
+    import random
+
+    random.seed(42)
+    orders: list[dict] = []
+    order_id = 9000
+    li_id = 20000
+
+    start = datetime(2025, 3, 1)
+    promo_start_day = 60   # 2025-04-30
+    promo_end_day = 67     # 2025-05-07
+    post_promo_end_day = 75  # 2025-05-15
+
+    customers = ["C1", "C2", "C3"]
+    promo_discount = [{"code": "SPRING20", "amount": "20.00", "type": "percentage"}]
+
+    for day_offset in range(122):
+        dt = start + timedelta(days=day_offset)
+        local_date = dt.strftime("%Y-%m-%d")
+        created_at = dt.strftime("%Y-%m-%dT10:00:00Z")
+        is_weekend = dt.weekday() >= 5
+
+        # Determine order volume for the day
+        if promo_start_day <= day_offset <= promo_end_day:
+            # Promo period: higher volume
+            num_orders = random.choice([3, 4, 5])
+            use_discount = True
+        elif promo_end_day < day_offset <= post_promo_end_day:
+            # Post-promo hangover: lower volume
+            num_orders = random.choice([1, 1, 2])
+            use_discount = False
+        else:
+            # Normal baseline
+            num_orders = random.choice([2, 2, 3]) if is_weekend else random.choice([1, 2, 2])
+            use_discount = False
+
+        for i in range(num_orders):
+            order_id += 1
+            li_id += 1
+            cust = customers[order_id % len(customers)]
+            # Alternate products, P1 more popular during promo
+            if promo_start_day <= day_offset <= promo_end_day:
+                prod = "P1" if i % 3 != 2 else "P2"
+            else:
+                prod = "P1" if i % 2 == 0 else "P2"
+
+            qty = random.choice([1, 2, 3])
+            price = 25.0 if prod == "P1" else 40.0
+
+            li = _make_line_item(
+                str(li_id), prod, f"SKU-{prod}", qty, price,
+            )
+            orders.append(
+                _make_order(
+                    str(order_id),
+                    created_at,
+                    local_date,
+                    [li],
+                    discount_codes=promo_discount if use_discount else [],
+                    customer_id=cust,
+                )
+            )
+
+    return orders
