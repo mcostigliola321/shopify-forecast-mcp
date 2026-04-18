@@ -12,7 +12,9 @@ A merchant can ask their AI assistant "what does next month look like?" and get 
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] Covariate engineering: day-of-week, weekend, month, holidays, holiday proximity, discount flags, custom events — Validated in Phase 5
+- [x] Analytics layer: promotion analysis, anomaly detection, period comparison (YoY/MoM), cohort retention — Validated in Phase 5
+- [x] Standalone CLI for non-MCP use (`shopify-forecast revenue|demand|promo|compare`) — Validated in Phase 5 (promo/compare verbs added)
 
 ### Active
 
@@ -89,4 +91,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-13 after initialization from shopify-forecast-mcp-PRD.md*
+*Last updated: 2026-04-18 after Phase 5 completion (analytics, covariates, remaining tools)*
