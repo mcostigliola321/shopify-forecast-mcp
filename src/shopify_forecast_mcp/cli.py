@@ -12,9 +12,14 @@ import sys
 from datetime import date, timedelta
 
 import numpy as np
+from dateutil.relativedelta import relativedelta
 
 # R9.3: NO imports from shopify_forecast_mcp.mcp -- CLI is MCP-independent
 from shopify_forecast_mcp.config import get_settings
+from shopify_forecast_mcp.core.analytics import (
+    analyze_promotion as _analyze_promotion,
+    compare_periods as _compare_periods,
+)
 from shopify_forecast_mcp.core.forecast_result import ForecastResult
 from shopify_forecast_mcp.core.forecaster import get_engine
 from shopify_forecast_mcp.core.shopify_backend import create_backend
@@ -62,6 +67,24 @@ def build_parser() -> argparse.ArgumentParser:
     # -- auth subcommand --
     auth_p = sub.add_parser("auth", help="Authenticate with Shopify via browser OAuth")
     auth_p.add_argument("--store", required=True, help="mystore.myshopify.com")
+
+    # -- promo subcommand (D-21) --
+    promo_p = sub.add_parser("promo", help="Analyze a past promotion's impact")
+    promo_p.add_argument("--start", required=True, help="Promo start date (YYYY-MM-DD)")
+    promo_p.add_argument("--end", required=True, help="Promo end date (YYYY-MM-DD)")
+    promo_p.add_argument("--name", default="", help="Optional promo name")
+    promo_p.add_argument("--baseline-days", type=int, default=30, help="Baseline period in days (default: 30)")
+    promo_p.add_argument("--json", action="store_true", dest="json_output", help="Output JSON instead of markdown")
+
+    # -- compare subcommand (D-23) --
+    cmp_p = sub.add_parser("compare", help="Compare two time periods")
+    cmp_p.add_argument("--yoy", action="store_true", help="This month vs same month last year")
+    cmp_p.add_argument("--mom", action="store_true", help="This month vs last month")
+    cmp_p.add_argument("--period-a-start", help="Custom period A start (YYYY-MM-DD)")
+    cmp_p.add_argument("--period-a-end", help="Custom period A end (YYYY-MM-DD)")
+    cmp_p.add_argument("--period-b-start", help="Custom period B start (YYYY-MM-DD)")
+    cmp_p.add_argument("--period-b-end", help="Custom period B end (YYYY-MM-DD)")
+    cmp_p.add_argument("--json", action="store_true", dest="json_output", help="Output JSON instead of markdown")
 
     return parser
 
@@ -259,6 +282,145 @@ def _run_auth(args: argparse.Namespace) -> int:
     return 0
 
 
+async def _run_promo(args: argparse.Namespace) -> int:
+    """Execute promotion analysis and print results."""
+    # Parse dates (T-05-10)
+    try:
+        promo_start = date.fromisoformat(args.start)
+        promo_end = date.fromisoformat(args.end)
+    except ValueError:
+        print("Error: Invalid date format. Use YYYY-MM-DD.", file=sys.stderr)
+        return 1
+
+    if promo_end < promo_start:
+        print("Error: --end must be on or after --start.", file=sys.stderr)
+        return 1
+
+    promo_duration = (promo_end - promo_start).days + 1
+    baseline_start = promo_start - timedelta(days=args.baseline_days + 7)
+    fetch_end = promo_end + timedelta(days=promo_duration + 7)
+
+    settings = get_settings()
+    backend = create_backend(settings)
+    async with ShopifyClient(backend, settings) as shopify:
+        log.info("Fetching orders for promotion analysis...")
+        orders = await shopify.fetch_orders(
+            baseline_start.isoformat(), fetch_end.isoformat()
+        )
+
+        if not orders:
+            print("No orders found in the promotion date range.", file=sys.stderr)
+            return 1
+
+        result = _analyze_promotion(
+            orders, promo_start, promo_end, args.baseline_days, args.name
+        )
+
+        if args.json_output:
+            out = {
+                "metadata": result.metadata,
+                "sections": [
+                    {
+                        "heading": s.heading,
+                        "headers": s.table_headers,
+                        "rows": s.table_rows,
+                    }
+                    for s in result.sections
+                ],
+                "summary": result.summary,
+                "recommendations": result.recommendations,
+            }
+            print(json.dumps(out, indent=2))
+        else:
+            print(result.to_markdown())
+
+    return 0
+
+
+def _resolve_compare_dates(
+    args: argparse.Namespace,
+) -> tuple[date, date, date, date]:
+    """Resolve period A and B dates from --yoy, --mom, or custom flags.
+
+    Returns (a_start, a_end, b_start, b_end).
+    Raises ValueError if dates cannot be resolved.
+    """
+    if args.yoy:
+        today = date.today()
+        b_start = today.replace(day=1)
+        b_end = today
+        a_start = b_start - relativedelta(years=1)
+        a_end = a_start + (b_end - b_start)
+        return (a_start, a_end, b_start, b_end)
+
+    if args.mom:
+        today = date.today()
+        b_start = today.replace(day=1)
+        b_end = today
+        a_start = b_start - relativedelta(months=1)
+        a_end = b_start - timedelta(days=1)
+        return (a_start, a_end, b_start, b_end)
+
+    # Custom date ranges -- all four required
+    if not all([args.period_a_start, args.period_a_end, args.period_b_start, args.period_b_end]):
+        raise ValueError(
+            "Provide --yoy, --mom, or all four custom date flags "
+            "(--period-a-start, --period-a-end, --period-b-start, --period-b-end)."
+        )
+
+    a_start = date.fromisoformat(args.period_a_start)
+    a_end = date.fromisoformat(args.period_a_end)
+    b_start = date.fromisoformat(args.period_b_start)
+    b_end = date.fromisoformat(args.period_b_end)
+    return (a_start, a_end, b_start, b_end)
+
+
+async def _run_compare(args: argparse.Namespace) -> int:
+    """Execute period comparison and print results."""
+    try:
+        a_start, a_end, b_start, b_end = _resolve_compare_dates(args)
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+
+    fetch_start = min(a_start, b_start)
+    fetch_end = max(a_end, b_end)
+
+    settings = get_settings()
+    backend = create_backend(settings)
+    async with ShopifyClient(backend, settings) as shopify:
+        log.info("Fetching orders for period comparison...")
+        orders = await shopify.fetch_orders(
+            fetch_start.isoformat(), fetch_end.isoformat()
+        )
+
+        if not orders:
+            print("No orders found in the comparison date range.", file=sys.stderr)
+            return 1
+
+        result = _compare_periods(orders, a_start, a_end, b_start, b_end)
+
+        if args.json_output:
+            out = {
+                "metadata": result.metadata,
+                "sections": [
+                    {
+                        "heading": s.heading,
+                        "headers": s.table_headers,
+                        "rows": s.table_rows,
+                    }
+                    for s in result.sections
+                ],
+                "summary": result.summary,
+                "recommendations": result.recommendations,
+            }
+            print(json.dumps(out, indent=2))
+        else:
+            print(result.to_markdown())
+
+    return 0
+
+
 def main() -> int:
     """Sync entry point for the shopify-forecast console script."""
     parser = build_parser()
@@ -274,6 +436,10 @@ def main() -> int:
         return asyncio.run(_run_revenue(args))
     elif args.command == "demand":
         return asyncio.run(_run_demand(args))
+    elif args.command == "promo":
+        return asyncio.run(_run_promo(args))
+    elif args.command == "compare":
+        return asyncio.run(_run_compare(args))
     else:
         parser.print_help()
         return 0

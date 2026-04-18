@@ -15,7 +15,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import numpy as np
 import pytest
 
-from shopify_forecast_mcp.cli import _run_demand, _run_revenue, build_parser, main
+from shopify_forecast_mcp.cli import (
+    _run_demand,
+    _run_revenue,
+    build_parser,
+    main,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -330,3 +335,262 @@ class TestRunDemand:
             code = await _run_demand(args)
 
         assert code == 1
+
+
+# ---------------------------------------------------------------------------
+# Level 4: Promo subcommand tests
+# ---------------------------------------------------------------------------
+
+
+class TestBuildParserPromo:
+    """Verify promo subcommand structure and defaults."""
+
+    def test_promo_subcommand_exists(self) -> None:
+        parser = build_parser()
+        args = parser.parse_args(["promo", "--start", "2025-04-30", "--end", "2025-05-07"])
+        assert args.command == "promo"
+        assert args.start == "2025-04-30"
+        assert args.end == "2025-05-07"
+
+    def test_promo_defaults(self) -> None:
+        parser = build_parser()
+        args = parser.parse_args(["promo", "--start", "2025-04-30", "--end", "2025-05-07"])
+        assert args.name == ""
+        assert args.baseline_days == 30
+        assert args.json_output is False
+
+    def test_promo_all_flags(self) -> None:
+        parser = build_parser()
+        args = parser.parse_args([
+            "promo", "--start", "2025-04-30", "--end", "2025-05-07",
+            "--name", "Spring Sale", "--baseline-days", "60", "--json",
+        ])
+        assert args.name == "Spring Sale"
+        assert args.baseline_days == 60
+        assert args.json_output is True
+
+
+class TestRunPromo:
+    """Integration tests for _run_promo with mocked dependencies."""
+
+    @pytest.mark.asyncio()
+    async def test_promo_markdown_output(
+        self, sample_orders_with_promos: list[dict], capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        from shopify_forecast_mcp.cli import _run_promo
+
+        mock_client = _mock_shopify_client(sample_orders_with_promos)
+
+        args = build_parser().parse_args([
+            "promo", "--start", "2025-04-30", "--end", "2025-05-07",
+        ])
+
+        with (
+            patch("shopify_forecast_mcp.cli.get_settings"),
+            patch("shopify_forecast_mcp.cli.create_backend"),
+            patch("shopify_forecast_mcp.cli.ShopifyClient", return_value=mock_client),
+        ):
+            code = await _run_promo(args)
+
+        assert code == 0
+        captured = capsys.readouterr()
+        assert "Promotion Impact" in captured.out
+
+    @pytest.mark.asyncio()
+    async def test_promo_json_output(
+        self, sample_orders_with_promos: list[dict], capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        from shopify_forecast_mcp.cli import _run_promo
+
+        mock_client = _mock_shopify_client(sample_orders_with_promos)
+
+        args = build_parser().parse_args([
+            "promo", "--start", "2025-04-30", "--end", "2025-05-07", "--json",
+        ])
+
+        with (
+            patch("shopify_forecast_mcp.cli.get_settings"),
+            patch("shopify_forecast_mcp.cli.create_backend"),
+            patch("shopify_forecast_mcp.cli.ShopifyClient", return_value=mock_client),
+        ):
+            code = await _run_promo(args)
+
+        assert code == 0
+        captured = capsys.readouterr()
+        data = json.loads(captured.out)
+        assert "sections" in data
+
+    @pytest.mark.asyncio()
+    async def test_promo_invalid_dates_returns_one(
+        self, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        from shopify_forecast_mcp.cli import _run_promo
+
+        args = build_parser().parse_args([
+            "promo", "--start", "not-a-date", "--end", "2025-05-07",
+        ])
+
+        code = await _run_promo(args)
+        assert code == 1
+
+
+# ---------------------------------------------------------------------------
+# Level 5: Compare subcommand tests
+# ---------------------------------------------------------------------------
+
+
+class TestBuildParserCompare:
+    """Verify compare subcommand structure and defaults."""
+
+    def test_compare_subcommand_exists_with_yoy(self) -> None:
+        parser = build_parser()
+        args = parser.parse_args(["compare", "--yoy"])
+        assert args.command == "compare"
+        assert args.yoy is True
+        assert args.mom is False
+
+    def test_compare_subcommand_with_mom(self) -> None:
+        parser = build_parser()
+        args = parser.parse_args(["compare", "--mom"])
+        assert args.mom is True
+        assert args.yoy is False
+
+    def test_compare_custom_dates(self) -> None:
+        parser = build_parser()
+        args = parser.parse_args([
+            "compare",
+            "--period-a-start", "2025-03-01",
+            "--period-a-end", "2025-03-31",
+            "--period-b-start", "2025-04-01",
+            "--period-b-end", "2025-04-30",
+        ])
+        assert args.period_a_start == "2025-03-01"
+        assert args.period_a_end == "2025-03-31"
+        assert args.period_b_start == "2025-04-01"
+        assert args.period_b_end == "2025-04-30"
+
+    def test_compare_json_flag(self) -> None:
+        parser = build_parser()
+        args = parser.parse_args(["compare", "--yoy", "--json"])
+        assert args.json_output is True
+
+
+class TestRunCompare:
+    """Integration tests for _run_compare with mocked dependencies."""
+
+    @pytest.mark.asyncio()
+    async def test_compare_custom_dates_markdown(
+        self, sample_orders_with_promos: list[dict], capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        from shopify_forecast_mcp.cli import _run_compare
+
+        mock_client = _mock_shopify_client(sample_orders_with_promos)
+
+        args = build_parser().parse_args([
+            "compare",
+            "--period-a-start", "2025-03-01",
+            "--period-a-end", "2025-03-31",
+            "--period-b-start", "2025-04-01",
+            "--period-b-end", "2025-04-30",
+        ])
+
+        with (
+            patch("shopify_forecast_mcp.cli.get_settings"),
+            patch("shopify_forecast_mcp.cli.create_backend"),
+            patch("shopify_forecast_mcp.cli.ShopifyClient", return_value=mock_client),
+        ):
+            code = await _run_compare(args)
+
+        assert code == 0
+        captured = capsys.readouterr()
+        assert "Period Comparison" in captured.out
+        assert "Revenue" in captured.out
+
+    @pytest.mark.asyncio()
+    async def test_compare_json_output(
+        self, sample_orders_with_promos: list[dict], capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        from shopify_forecast_mcp.cli import _run_compare
+
+        mock_client = _mock_shopify_client(sample_orders_with_promos)
+
+        args = build_parser().parse_args([
+            "compare",
+            "--period-a-start", "2025-03-01",
+            "--period-a-end", "2025-03-31",
+            "--period-b-start", "2025-04-01",
+            "--period-b-end", "2025-04-30",
+            "--json",
+        ])
+
+        with (
+            patch("shopify_forecast_mcp.cli.get_settings"),
+            patch("shopify_forecast_mcp.cli.create_backend"),
+            patch("shopify_forecast_mcp.cli.ShopifyClient", return_value=mock_client),
+        ):
+            code = await _run_compare(args)
+
+        assert code == 0
+        captured = capsys.readouterr()
+        data = json.loads(captured.out)
+        assert "sections" in data
+
+    @pytest.mark.asyncio()
+    async def test_compare_yoy_returns_zero(
+        self, sample_orders_with_promos: list[dict], capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        from shopify_forecast_mcp.cli import _run_compare
+
+        mock_client = _mock_shopify_client(sample_orders_with_promos)
+
+        args = build_parser().parse_args(["compare", "--yoy"])
+
+        with (
+            patch("shopify_forecast_mcp.cli.get_settings"),
+            patch("shopify_forecast_mcp.cli.create_backend"),
+            patch("shopify_forecast_mcp.cli.ShopifyClient", return_value=mock_client),
+        ):
+            code = await _run_compare(args)
+
+        assert code == 0
+
+    @pytest.mark.asyncio()
+    async def test_compare_mom_returns_zero(
+        self, sample_orders_with_promos: list[dict], capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        from shopify_forecast_mcp.cli import _run_compare
+
+        mock_client = _mock_shopify_client(sample_orders_with_promos)
+
+        args = build_parser().parse_args(["compare", "--mom"])
+
+        with (
+            patch("shopify_forecast_mcp.cli.get_settings"),
+            patch("shopify_forecast_mcp.cli.create_backend"),
+            patch("shopify_forecast_mcp.cli.ShopifyClient", return_value=mock_client),
+        ):
+            code = await _run_compare(args)
+
+        assert code == 0
+
+
+class TestMainDispatches:
+    """Test that main() dispatches promo and compare correctly."""
+
+    def test_main_dispatches_promo(self) -> None:
+        with (
+            patch("sys.argv", ["shopify-forecast", "promo", "--start", "2025-04-30", "--end", "2025-05-07"]),
+            patch("shopify_forecast_mcp.cli._run_promo", new_callable=AsyncMock, return_value=0) as mock_run,
+            patch("asyncio.run", side_effect=lambda coro: 0) as mock_asyncio,
+        ):
+            code = main()
+        assert code == 0
+
+    def test_main_dispatches_compare(self) -> None:
+        with (
+            patch("sys.argv", ["shopify-forecast", "compare", "--yoy"]),
+            patch("shopify_forecast_mcp.cli._run_compare", new_callable=AsyncMock, return_value=0) as mock_run,
+            patch("asyncio.run", side_effect=lambda coro: 0) as mock_asyncio,
+        ):
+            code = main()
+        assert code == 0
