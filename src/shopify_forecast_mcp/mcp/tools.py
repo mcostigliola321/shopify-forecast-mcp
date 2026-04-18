@@ -11,6 +11,12 @@ from mcp.server.fastmcp import Context
 from mcp.server.session import ServerSession
 from pydantic import BaseModel, Field
 
+from shopify_forecast_mcp.core.analytics import (
+    analyze_promotion as _analyze_promotion,
+    compare_periods as _compare_periods,
+    detect_anomalies as _detect_anomalies,
+    get_seasonality as _get_seasonality,
+)
 from shopify_forecast_mcp.core.forecast_result import ForecastResult
 from shopify_forecast_mcp.core.timeseries import (
     clean_series,
@@ -296,3 +302,299 @@ async def forecast_demand(
     except Exception as e:
         log.exception("forecast_demand failed")
         return f"**Error running forecast_demand**\n\n{type(e).__name__}: {e}"
+
+
+# ---------------------------------------------------------------------------
+# analyze_promotion
+# ---------------------------------------------------------------------------
+
+
+class AnalyzePromotionParams(BaseModel):
+    """Input schema for the analyze_promotion tool."""
+
+    promo_start: str = Field(..., description="Promo start date (YYYY-MM-DD)")
+    promo_end: str = Field(..., description="Promo end date (YYYY-MM-DD)")
+    promo_name: str = Field("", description="Optional promo name for labeling")
+    baseline_days: int = Field(
+        30, ge=7, le=365, description="Days before promo to use as baseline"
+    )
+
+
+@mcp.tool()
+async def analyze_promotion(
+    params: AnalyzePromotionParams,
+    ctx: Context[ServerSession, AppContext],
+) -> str:
+    """Analyze a past promotion's impact vs baseline: revenue lift, order lift, AOV change, post-promo hangover, and product cannibalization."""
+    app: AppContext = ctx.request_context.lifespan_context
+    try:
+        # Parse dates (T-05-08)
+        try:
+            promo_start = date.fromisoformat(params.promo_start)
+            promo_end = date.fromisoformat(params.promo_end)
+        except ValueError:
+            return (
+                "**Error running analyze_promotion**\n\n"
+                "Invalid date format. Use YYYY-MM-DD."
+            )
+
+        if promo_end < promo_start:
+            return (
+                "**Error running analyze_promotion**\n\n"
+                "promo_end must be on or after promo_start."
+            )
+
+        # Compute fetch window with buffer
+        promo_duration = (promo_end - promo_start).days + 1
+        baseline_start = promo_start - timedelta(days=params.baseline_days + 7)
+        fetch_end = promo_end + timedelta(days=promo_duration + 7)
+
+        await ctx.info("Fetching orders for promotion analysis...")
+        orders = await app.shopify.fetch_orders(
+            start_date=baseline_start.isoformat(),
+            end_date=fetch_end.isoformat(),
+        )
+
+        result = _analyze_promotion(
+            orders, promo_start, promo_end, params.baseline_days, params.promo_name
+        )
+        return result.to_markdown()
+
+    except Exception as e:
+        log.exception("analyze_promotion failed")
+        return f"**Error running analyze_promotion**\n\n{type(e).__name__}: {e}"
+
+
+# ---------------------------------------------------------------------------
+# compare_periods
+# ---------------------------------------------------------------------------
+
+
+class ComparePeriodsParams(BaseModel):
+    """Input schema for the compare_periods tool."""
+
+    period_a_start: str = Field(..., description="Period A start (YYYY-MM-DD)")
+    period_a_end: str = Field(..., description="Period A end (YYYY-MM-DD)")
+    period_b_start: str = Field(..., description="Period B start (YYYY-MM-DD)")
+    period_b_end: str = Field(..., description="Period B end (YYYY-MM-DD)")
+    metrics: list[str] | None = Field(
+        None, description="Metrics to compare (default: all 6)"
+    )
+    group_by: str | None = Field(
+        None, description="Optional: product_id, collection_id, or sku"
+    )
+
+
+@mcp.tool()
+async def compare_periods(
+    params: ComparePeriodsParams,
+    ctx: Context[ServerSession, AppContext],
+) -> str:
+    """Compare two time periods across revenue, orders, units, AOV, discount rate, and units per order."""
+    app: AppContext = ctx.request_context.lifespan_context
+    try:
+        # Parse dates (T-05-08)
+        try:
+            a_start = date.fromisoformat(params.period_a_start)
+            a_end = date.fromisoformat(params.period_a_end)
+            b_start = date.fromisoformat(params.period_b_start)
+            b_end = date.fromisoformat(params.period_b_end)
+        except ValueError:
+            return (
+                "**Error running compare_periods**\n\n"
+                "Invalid date format. Use YYYY-MM-DD."
+            )
+
+        if a_end < a_start or b_end < b_start:
+            return (
+                "**Error running compare_periods**\n\n"
+                "End date must be on or after start date for both periods."
+            )
+
+        # Fetch orders spanning both periods
+        fetch_start = min(a_start, b_start)
+        fetch_end = max(a_end, b_end)
+
+        await ctx.info("Fetching orders for period comparison...")
+        orders = await app.shopify.fetch_orders(
+            start_date=fetch_start.isoformat(),
+            end_date=fetch_end.isoformat(),
+        )
+
+        metrics_tuple = tuple(params.metrics) if params.metrics else None
+        result = _compare_periods(
+            orders, a_start, a_end, b_start, b_end, metrics_tuple
+        )
+        return result.to_markdown()
+
+    except Exception as e:
+        log.exception("compare_periods failed")
+        return f"**Error running compare_periods**\n\n{type(e).__name__}: {e}"
+
+
+# ---------------------------------------------------------------------------
+# get_seasonality
+# ---------------------------------------------------------------------------
+
+
+class GetSeasonalityParams(BaseModel):
+    """Input schema for the get_seasonality tool."""
+
+    lookback_days: int = Field(
+        365, ge=30, le=1095, description="Days of history to analyze"
+    )
+    granularity: Literal["day_of_week", "monthly", "quarterly"] = Field(
+        "day_of_week", description="Seasonality granularity"
+    )
+    metric: Literal["revenue", "orders", "units", "aov"] = Field(
+        "revenue", description="Metric to analyze"
+    )
+
+
+@mcp.tool()
+async def get_seasonality(
+    params: GetSeasonalityParams,
+    ctx: Context[ServerSession, AppContext],
+) -> str:
+    """Identify seasonal patterns in store data by day of week, month, or quarter."""
+    app: AppContext = ctx.request_context.lifespan_context
+    try:
+        end = date.today()
+        start = end - timedelta(days=params.lookback_days)
+
+        await ctx.info("Fetching orders for seasonality analysis...")
+        orders = await app.shopify.fetch_orders(
+            start_date=start.isoformat(),
+            end_date=end.isoformat(),
+        )
+
+        if not orders:
+            return (
+                "**No orders found** in the requested date range. "
+                "Cannot analyze seasonality."
+            )
+
+        # Build daily series
+        series_dict = orders_to_daily_series(orders, metric=params.metric)
+        daily_series = series_dict["store"]
+
+        result = _get_seasonality(daily_series, granularity=params.granularity)
+        return result.to_markdown()
+
+    except Exception as e:
+        log.exception("get_seasonality failed")
+        return f"**Error running get_seasonality**\n\n{type(e).__name__}: {e}"
+
+
+# ---------------------------------------------------------------------------
+# detect_anomalies
+# ---------------------------------------------------------------------------
+
+
+class DetectAnomaliesParams(BaseModel):
+    """Input schema for the detect_anomalies tool."""
+
+    lookback_days: int = Field(
+        90, ge=14, le=365, description="Days to look back for anomalies"
+    )
+    sensitivity: Literal["low", "medium", "high"] = Field(
+        "medium",
+        description="Anomaly sensitivity: low (q10/q90), medium (q20/q80), high (q30/q70)",
+    )
+    metric: Literal["revenue", "orders", "units", "aov"] = Field(
+        "revenue", description="Single metric to check for anomalies"
+    )
+
+
+@mcp.tool()
+async def detect_anomalies(
+    params: DetectAnomaliesParams,
+    ctx: Context[ServerSession, AppContext],
+) -> str:
+    """Detect anomalous days where actual values fell outside expected forecast bands."""
+    app: AppContext = ctx.request_context.lifespan_context
+    try:
+        # Fetch extra context for better forecast quality
+        end = date.today()
+        extra_context = 90
+        start = end - timedelta(days=params.lookback_days + extra_context)
+
+        await ctx.info("Fetching orders for anomaly detection...")
+        orders = await app.shopify.fetch_orders(
+            start_date=start.isoformat(),
+            end_date=end.isoformat(),
+        )
+
+        if not orders:
+            return (
+                "**No orders found** in the requested date range. "
+                "Cannot detect anomalies."
+            )
+
+        # Build daily series
+        series_dict = orders_to_daily_series(orders, metric=params.metric)
+        daily_series = series_dict["store"]
+
+        if len(daily_series) < 14:
+            return (
+                "**Insufficient data** -- need at least 14 days of history "
+                "for anomaly detection."
+            )
+
+        await ctx.info("Running forecast to establish expected values...")
+
+        # Split series: use early portion as context, forecast the lookback window
+        lookback = min(params.lookback_days, len(daily_series) - 7)
+        context_len = len(daily_series) - lookback
+
+        if context_len < 7:
+            # Not enough context -- use all data as context, smaller lookback
+            context_len = 7
+            lookback = len(daily_series) - context_len
+
+        context_series = daily_series.iloc[:context_len]
+        actuals_series = daily_series.iloc[context_len:]
+
+        # Forecast the lookback window
+        context_values = context_series.values.astype(np.float32)
+        point, quantile = app.forecaster.forecast(
+            context_values, horizon=lookback
+        )
+
+        # Build ForecastResult for the lookback window
+        forecast_start = context_series.index[-1] + timedelta(days=1)
+        forecast_result = ForecastResult.from_forecast(
+            point=point,
+            quantile=quantile,
+            start_date=forecast_start,
+            freq="D",
+            metric=params.metric,
+        )
+
+        # Build known_events from holidays if covariates module available
+        known_events: list[dict[str, str]] = []
+        try:
+            from shopify_forecast_mcp.core.covariates import _get_country_holidays
+
+            holiday_dict = _get_country_holidays("US")
+            for d in actuals_series.index:
+                d_date = d.date() if hasattr(d, "date") else d
+                if d_date in holiday_dict:
+                    known_events.append(
+                        {"date": d_date.isoformat(), "label": holiday_dict[d_date]}
+                    )
+        except (ImportError, Exception):
+            pass  # Covariates module not available -- skip event labeling
+
+        result = _detect_anomalies(
+            actuals_series,
+            forecast_result,
+            params.sensitivity,
+            lookback,
+            known_events,
+        )
+        return result.to_markdown()
+
+    except Exception as e:
+        log.exception("detect_anomalies failed")
+        return f"**Error running detect_anomalies**\n\n{type(e).__name__}: {e}"
