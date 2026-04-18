@@ -21,8 +21,8 @@ Living memory file. Updated at every phase transition.
 
 **Phase:** 6
 **Current Plan:** Not started
-**Last completed:** 04.1-04 Test Infrastructure & CLI Integration (2026-04-16)
-**Next action:** Phase 4.1 complete; proceed to Phase 5
+**Last completed:** 05-03 MCP Tools & CLI Subcommands (2026-04-18)
+**Next action:** Phase 5 complete; proceed to Phase 6
 
 ## Initialization
 
@@ -41,7 +41,7 @@ Living memory file. Updated at every phase transition.
 | 3 | Time-series & Forecaster | ✅ Complete (4/4 plans, 2026-04-16) |
 | 4 | MCP Server & CLI (MVP) | ✅ Complete (4/4 plans, 2026-04-16) |
 | 4.1 | Shopify CLI Toolkit Integration | ✅ Complete (4/4 plans, 2026-04-16) |
-| 5 | Analytics & Covariates | ⏳ Pending |
+| 5 | Analytics & Covariates | ✅ Complete (3/3 plans, 2026-04-18) |
 | 6 | Advanced Features | ⏳ Pending |
 | 7 | Distribution | ⏳ Pending |
 
