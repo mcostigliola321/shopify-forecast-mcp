@@ -22,6 +22,11 @@ from shopify_forecast_mcp.config import Settings
 
 logger = logging.getLogger(__name__)
 
+COVARIATES_DISCLAIMER = (
+    "Note: Covariates provide marginal improvement over TimesFM's foundation model. "
+    "Results with and without covariates may be similar."
+)
+
 
 class ForecastEngine:
     """Singleton TimesFM 2.5 inference engine.
@@ -62,6 +67,27 @@ class ForecastEngine:
             os.environ["HF_HOME"] = settings.hf_home
 
         self._model: timesfm.TimesFM_2p5_200M_torch | None = None
+        self._xreg_compiled: bool = False
+
+    def _ensure_xreg_compiled(self) -> None:
+        """Lazily recompile ForecastConfig with return_backcast=True for XReg."""
+        if self._xreg_compiled:
+            return
+
+        self._model.compile(  # type: ignore[union-attr]
+            timesfm.ForecastConfig(
+                max_context=self.context_length,
+                max_horizon=256,
+                normalize_inputs=True,
+                use_continuous_quantile_head=True,
+                force_flip_invariance=True,
+                infer_is_positive=True,
+                fix_quantile_crossing=True,
+                return_backcast=True,  # REQUIRED for XReg
+            )
+        )
+        self._xreg_compiled = True
+        logger.info("Recompiled ForecastConfig with return_backcast=True for XReg")
 
     def load(self) -> None:
         """Load the TimesFM model (downloads weights on first run)."""
@@ -118,6 +144,58 @@ class ForecastEngine:
 
         point, quantile = self._model.forecast(  # type: ignore[union-attr]
             horizon=horizon, inputs=inputs
+        )
+        return point, quantile
+
+    def forecast_with_covariates(
+        self,
+        series: np.ndarray | list[np.ndarray],
+        covariates: dict[str, list[list[float]]],
+        horizon: int | None = None,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Run inference with external regressors (XReg covariates).
+
+        Parameters
+        ----------
+        series:
+            A single 1-D numpy array or a list of 1-D arrays (batch mode).
+        covariates:
+            Dict of covariate name -> ``[[values...]]`` from
+            :func:`build_aligned_covariates`. Each array must have length
+            ``len(input) + horizon``.
+        horizon:
+            Number of steps to forecast. Defaults to ``settings.timesfm_horizon``.
+
+        Returns
+        -------
+        tuple[np.ndarray, np.ndarray]
+            ``(point_forecast, quantile_forecast)`` same shape as :meth:`forecast`.
+        """
+        self.load()
+        self._ensure_xreg_compiled()
+
+        if horizon is None:
+            horizon = self.default_horizon
+
+        if isinstance(series, np.ndarray):
+            inputs = [series]
+        else:
+            inputs = series
+
+        # Validate covariate lengths (T-05-07)
+        expected_len = len(inputs[0]) + horizon
+        for name, values in covariates.items():
+            if len(values[0]) != expected_len:
+                msg = (
+                    f"Covariate '{name}' length {len(values[0])} != "
+                    f"expected {expected_len} (input_len={len(inputs[0])} + horizon={horizon})"
+                )
+                raise ValueError(msg)
+
+        point, quantile = self._model.forecast_with_covariates(  # type: ignore[union-attr]
+            inputs=inputs,
+            dynamic_numerical_covariates=covariates,
+            horizon=horizon,
         )
         return point, quantile
 

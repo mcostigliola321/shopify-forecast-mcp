@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     timesfm_context_length: int = 1024
     timesfm_horizon: int = 90
 
+    # --- Feature flags ---
+    covariates_enabled: bool = Field(
+        False, description="Enable XReg covariates for forecasting (opt-in, marginal improvement)"
+    )
+
     # --- Caching ---
     forecast_cache_ttl: int = 3600
 
