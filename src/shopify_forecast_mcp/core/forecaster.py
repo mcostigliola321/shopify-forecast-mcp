@@ -195,9 +195,8 @@ class ForecastEngine:
         point, quantile = self._model.forecast_with_covariates(  # type: ignore[union-attr]
             inputs=inputs,
             dynamic_numerical_covariates=covariates,
-            horizon=horizon,
         )
-        return point, quantile
+        return np.asarray(point), np.asarray(quantile)
 
 
 # ---------------------------------------------------------------------------
