@@ -131,9 +131,9 @@ Plans:
 **Plans:** 3 plans, 2 waves
 
 Plans:
-- [ ] 05-01-PLAN.md — Core analytics module: metrics infrastructure, AnalyticsResult, 5 analytics functions, normalize customer_id (Wave 1)
-- [ ] 05-02-PLAN.md — Covariate engineering module + XReg wiring into ForecastEngine + feature flag (Wave 1, parallel with 05-01)
-- [ ] 05-03-PLAN.md — 4 MCP tool handlers + CLI promo/compare verbs (Wave 2, depends on 05-01 + 05-02)
+- [x] 05-01-PLAN.md — Core analytics module: metrics infrastructure, AnalyticsResult, 5 analytics functions, normalize customer_id (Wave 1)
+- [x] 05-02-PLAN.md — Covariate engineering module + XReg wiring into ForecastEngine + feature flag (Wave 1, parallel with 05-01)
+- [x] 05-03-PLAN.md — 4 MCP tool handlers + CLI promo/compare verbs (Wave 2, depends on 05-01 + 05-02)
 
 **Success criteria**:
 - `analyze_promotion` on the fixture promo window returns sensible lift, AOV change, and hangover estimate
