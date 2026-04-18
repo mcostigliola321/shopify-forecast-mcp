@@ -190,9 +190,10 @@ class TestComparePeriods:
         )
         assert isinstance(result, AnalyticsResult)
         md = result.to_markdown()
-        # Check all metrics appear in output
-        for metric in ["revenue", "orders", "units", "aov", "discount_rate", "units_per_order"]:
-            assert metric.lower() in md.lower() or metric.replace("_", " ").lower() in md.lower()
+        # Check all metrics appear in output (using display labels)
+        md_lower = md.lower()
+        for label in ["revenue", "orders", "units", "aov", "discount rate", "units/order"]:
+            assert label in md_lower, f"Missing metric label: {label}"
 
     def test_highlights_biggest_movers(self, sample_orders_with_promos):
         result = compare_periods(
