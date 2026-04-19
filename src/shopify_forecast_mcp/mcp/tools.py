@@ -11,6 +11,10 @@ from mcp.server.fastmcp import Context
 from mcp.server.session import ServerSession
 from pydantic import BaseModel, Field
 
+from shopify_forecast_mcp.core.inventory import (
+    compute_reorder_alerts,
+    format_reorder_alerts,
+)
 from shopify_forecast_mcp.core.analytics import (
     analyze_promotion as _analyze_promotion,
     compare_periods as _compare_periods,
@@ -167,6 +171,18 @@ class ForecastDemandParams(BaseModel):
     top_n: int = Field(
         10, ge=1, le=50, description="Number of top groups when group_value='all'"
     )
+    lead_time_days: int = Field(
+        14,
+        ge=1,
+        le=365,
+        description="Lead time in days for reorder calculation (default: 14)",
+    )
+    safety_factor: float = Field(
+        1.2,
+        ge=1.0,
+        le=3.0,
+        description="Safety factor for reorder qty (default: 1.2, i.e. 20% buffer)",
+    )
 
 
 @mcp.tool()
@@ -258,6 +274,9 @@ async def forecast_demand(
         )
         rows.append("|---|---|---|---|---|")
 
+        # Track forecast results for reorder alerts
+        forecast_results: dict[str, dict] = {}
+
         for group_key, series in series_dict.items():
             historical_total = float(series.sum())
             values = series.values.astype(np.float32)
@@ -295,11 +314,40 @@ async def forecast_demand(
                 f"| {projected:,.0f} | {low:,.0f} | {high:,.0f} |"
             )
 
+            # Store projected total for reorder alert demand map
+            forecast_results[group_key] = {"projected": projected}
+
         rows.append("")
         rows.append(
             f"*{params.metric.capitalize()} metric, {params.horizon_days}-day "
             f"horizon, top {len(series_dict)} by volume*"
         )
+
+        # Inventory-aware reorder alerts (D-05, D-09: graceful degradation)
+        reorder_section = ""
+        try:
+            await ctx.info("Checking inventory levels for reorder alerts...")
+            inventory = await app.shopify.fetch_inventory()
+            if inventory:
+                # Build daily demand map: product_id -> avg daily demand from forecast
+                demand_map: dict[str, float] = {}
+                for group_key, data_dict in forecast_results.items():
+                    if "projected" in data_dict:
+                        daily_avg = data_dict["projected"] / params.horizon_days
+                        demand_map[group_key] = daily_avg
+                alerts = compute_reorder_alerts(
+                    inventory,
+                    demand_map,
+                    lead_time_days=params.lead_time_days,
+                    safety_factor=params.safety_factor,
+                )
+                reorder_section = format_reorder_alerts(alerts)
+        except Exception as inv_err:
+            # D-09: graceful degradation -- log warning, continue without alerts
+            log.warning("Could not fetch inventory for reorder alerts: %s", inv_err)
+
+        if reorder_section:
+            rows.append(reorder_section)
 
         return "\n".join(rows)
 

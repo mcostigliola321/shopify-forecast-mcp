@@ -207,3 +207,73 @@ class TestForecastDemandTool:
 
         assert len(mock_ctx._info_messages) >= 1
         assert any("order" in m.lower() or "forecast" in m.lower() for m in mock_ctx._info_messages)
+
+    @pytest.mark.asyncio()
+    async def test_reorder_alerts_included_when_inventory_available(
+        self, mock_app: AppContext
+    ) -> None:
+        """When fetch_inventory returns data, reorder alerts section appears."""
+        # Setup inventory with low stock relative to demand
+        mock_app.shopify.fetch_inventory = AsyncMock(return_value=[
+            {
+                "variant_id": "100",
+                "sku": "SKU-A",
+                "product_id": "P1",
+                "product_title": "Product P1",
+                "available": 50,
+                "location_id": "1",
+                "location_name": "Warehouse",
+            },
+        ])
+        ctx = MockCtx(mock_app)
+        params = ForecastDemandParams(
+            group_by="product", group_value="P1", lead_time_days=14
+        )
+        result = await forecast_demand(params, ctx)  # type: ignore[arg-type]
+
+        assert "Reorder Alerts" in result
+        assert "SKU-A" in result
+        assert "Warehouse" in result
+
+    @pytest.mark.asyncio()
+    async def test_graceful_degradation_on_inventory_error(
+        self, mock_app: AppContext
+    ) -> None:
+        """When fetch_inventory raises, demand forecast still returns without error."""
+        mock_app.shopify.fetch_inventory = AsyncMock(
+            side_effect=RuntimeError("Inventory scope not granted")
+        )
+        ctx = MockCtx(mock_app)
+        params = ForecastDemandParams(group_by="product", group_value="all")
+        result = await forecast_demand(params, ctx)  # type: ignore[arg-type]
+
+        # Should still have the demand forecast table
+        assert "# Demand Forecast by Product" in result
+        assert "P1" in result
+        # Should NOT have error message
+        assert "Error" not in result
+        # Should NOT have reorder alerts
+        assert "Reorder Alerts" not in result
+
+    @pytest.mark.asyncio()
+    async def test_lead_time_and_safety_factor_params(self) -> None:
+        """ForecastDemandParams accepts lead_time_days and safety_factor."""
+        p = ForecastDemandParams(lead_time_days=21, safety_factor=1.5)
+        assert p.lead_time_days == 21
+        assert p.safety_factor == 1.5
+
+    @pytest.mark.asyncio()
+    async def test_rejects_invalid_lead_time(self) -> None:
+        """lead_time_days must be 1-365."""
+        with pytest.raises(ValidationError):
+            ForecastDemandParams(lead_time_days=0)
+        with pytest.raises(ValidationError):
+            ForecastDemandParams(lead_time_days=366)
+
+    @pytest.mark.asyncio()
+    async def test_rejects_invalid_safety_factor(self) -> None:
+        """safety_factor must be 1.0-3.0."""
+        with pytest.raises(ValidationError):
+            ForecastDemandParams(safety_factor=0.5)
+        with pytest.raises(ValidationError):
+            ForecastDemandParams(safety_factor=3.5)
