@@ -30,7 +30,12 @@ dependencies = [
   "holidays>=0.50",
   "python-dateutil>=2.9",
   "torch>=2.4",
-  "timesfm @ git+https://github.com/google-research/timesfm.git@f085b9079918092aa5e3917a4e135f87f91a7f03",
+  "timecopilot-timesfm>=0.2,<0.3",
+  # timecopilot-timesfm 0.2.1's TimesFM_2p5_200M_torch._from_pretrained declares
+  # `proxies` and `resume_download` as required kwargs. huggingface_hub>=1.0
+  # removed them from the call site (kept 0.x), so pin <1.0 for compatibility.
+  # Revisit when timecopilot-timesfm>=0.3 relaxes the signature.
+  "huggingface-hub>=0.34,<1.0",
 ]
 
 [project.optional-dependencies]
