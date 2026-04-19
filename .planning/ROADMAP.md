@@ -152,9 +152,9 @@ Plans:
 **Plans:** 3 plans, 2 waves
 
 Plans:
-- [ ] 06-01-PLAN.md — compare_scenarios core module + MCP tool + CLI verb (Wave 1)
-- [ ] 06-02-PLAN.md — Inventory-aware reorder alerts extending forecast_demand (Wave 1, parallel with 06-01)
-- [ ] 06-03-PLAN.md — Multi-store config, store registry, store param on all tools + CLI (Wave 2, depends on 06-01 + 06-02)
+- [x] 06-01-PLAN.md — compare_scenarios core module + MCP tool + CLI verb (Wave 1)
+- [x] 06-02-PLAN.md — Inventory-aware reorder alerts extending forecast_demand (Wave 1, parallel with 06-01)
+- [x] 06-03-PLAN.md — Multi-store config, store registry, store param on all tools + CLI (Wave 2, depends on 06-01 + 06-02)
 
 **Success criteria**:
 - `compare_scenarios` with 3 promo scenarios returns 3 differentiated forecasts in one markdown response
