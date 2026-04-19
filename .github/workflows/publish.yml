@@ -121,7 +121,8 @@ jobs:
         # uv publish with no flags: auto-detects ACTIONS_ID_TOKEN_REQUEST_TOKEN
         # + the trusted-publisher config on PyPI, exchanges for a short-lived
         # upload token. PEP 440: v0.1.0-rc1 uploads as a pre-release automatically.
-        run: uv publish
+        # --check-url: skip files already on PyPI so workflow re-runs are idempotent.
+        run: uv publish --check-url https://pypi.org/simple/
 
   # Job 4: build + push multi-arch Docker images to GHCR.
   # Two variants (runtime-lazy, runtime-bundled) via job matrix.

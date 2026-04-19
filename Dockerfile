@@ -30,7 +30,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project --no-dev
 
 # Second sync: with project code, as a real install (not editable).
+# README.md + LICENSE required by hatchling (pyproject.toml references them).
 COPY src ./src
+COPY README.md LICENSE ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-editable
 
