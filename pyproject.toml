@@ -62,9 +62,9 @@ shopify-forecast      = "shopify_forecast_mcp.cli:main"
 shopify-forecast-mcp  = "shopify_forecast_mcp.mcp.server:main"
 
 [project.urls]
-Homepage   = "https://github.com/omnialta/shopify-forecast-mcp"
-Repository = "https://github.com/omnialta/shopify-forecast-mcp"
-Issues     = "https://github.com/omnialta/shopify-forecast-mcp/issues"
+Homepage   = "https://github.com/mcostigliola321/shopify-forecast-mcp"
+Repository = "https://github.com/mcostigliola321/shopify-forecast-mcp"
+Issues     = "https://github.com/mcostigliola321/shopify-forecast-mcp/issues"
 
 [tool.uv]
 default-groups = ["dev"]

@@ -47,7 +47,7 @@ A merchant can ask their AI assistant "what does next month look like?" and get 
 - **Competitive landscape:** Existing third-party tools either use weak forecasting models (moving averages, Prophet) or are locked inside closed SaaS products with no MCP exposure. Nobody has connected TimesFM + Shopify GraphQL + MCP.
 - **TimesFM 2.5:** 200M params, 16k context, continuous quantile head, zero-shot. State-of-the-art on GIFT-Eval benchmark. Apache-2.0 licensed by Google Research. ~400MB download, cached locally.
 - **Shopify gotchas to handle:** `totalPriceSet` includes tax/shipping (use `subtotalPriceSet`), bulk ops return JSONL not JSON, bulk result URLs expire after 1hr, GraphQL is cost-based rate-limited (1000 pts/sec), GIDs need stripping, multi-currency requires `shopMoney`.
-- **Author:** Mark (OmniAlta LLC). Repo: `github.com/omnialta/shopify-forecast-mcp`. License: MIT.
+- **Author:** Mark (OmniAlta LLC). Repo: `github.com/mcostigliola321/shopify-forecast-mcp`. License: MIT.
 - **Source spec:** `shopify-forecast-mcp-PRD.md` in project root — comprehensive PRD with build order, file structure, tool schemas, gotchas, and roadmap.
 
 ## Constraints

@@ -116,7 +116,7 @@ Source: `shopify-forecast-mcp-PRD.md` + research synthesis at `.planning/researc
 ## R12. Distribution
 
 - **R12.1** PyPI publish via `uv publish` (Trusted Publisher OIDC from GitHub Actions)
-- **R12.2** Docker image (`ghcr.io/omnialta/shopify-forecast-mcp`) — multistage with `python:3.12-slim`, `uv` from `ghcr.io/astral-sh/uv`, CPU torch
+- **R12.2** Docker image (`ghcr.io/mcostigliola321/shopify-forecast-mcp`) — multistage with `python:3.12-slim`, `uv` from `ghcr.io/astral-sh/uv`, CPU torch
 - **R12.3** Two image tags: `:latest` (lazy model download) and `:bundled` (model baked into separate build stage at `/opt/hf-cache`)
 - **R12.4** GitHub Actions: test on Python 3.11, build wheel + sdist, publish on tag
 - **R12.5** Skip npx wrapper — `uvx` is the equivalent and works natively in MCP client configs

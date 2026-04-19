@@ -8,7 +8,7 @@
 
 Ship `shopify-forecast-mcp` publicly as an installable product. Four deliverables:
 1. **PyPI publish pipeline** — GitHub Actions workflow using `uv publish` + Trusted Publisher OIDC, tag-triggered, produces wheel + sdist + GitHub Release with attached artifacts.
-2. **Docker images on GHCR** — `ghcr.io/omnialta/shopify-forecast-mcp:latest` (lazy model download) and `:bundled` (TimesFM baked into `/opt/hf-cache`), multi-arch linux/amd64 + linux/arm64.
+2. **Docker images on GHCR** — `ghcr.io/mcostigliola321/shopify-forecast-mcp:latest` (lazy model download) and `:bundled` (TimesFM baked into `/opt/hf-cache`), multi-arch linux/amd64 + linux/arm64.
 3. **User-facing documentation** — `README.md`, `docs/SETUP.md`, `docs/TOOLS.md`, `docs/ARCHITECTURE.md`, all written merchant-operator-first. Target: clone-to-running in <5 minutes.
 4. **v0.1.0 release cut** — Exercise the full pipeline via a `v0.1.0-rc1` dry-run, then tag `v0.1.0` as a production alpha (classifier stays "Development Status :: 3 - Alpha").
 
@@ -33,7 +33,7 @@ Out of scope for this phase: new tools, new capabilities, Shopify Sidekick App E
   - `:latest` — lazy: model downloads on first forecast call.
   - `:bundled` — adds a second build stage that runs `python -c "from timesfm import TimesFM_2p5_200M_torch; TimesFM_2p5_200M_torch.from_pretrained('google/timesfm-2.5-200m-pytorch')"` with `HF_HOME=/opt/hf-cache`, then `COPY --from=model-build /opt/hf-cache /opt/hf-cache` into the final image. Final image sets `HF_HOME=/opt/hf-cache` so loads are no-internet.
 - **D-09:** Container credential delivery = environment variables only. `SHOPIFY_FORECAST_SHOP` + `SHOPIFY_FORECAST_ACCESS_TOKEN` force the DirectBackend path (httpx). Browser OAuth via `shopify store auth` does **not** work inside containers — documented explicitly in SETUP.md. No Shopify CLI inside the image.
-- **D-10:** Entrypoint = custom `/app/entrypoint.sh` script. No arg → `shopify-forecast-mcp` (MCP server over stdio). First arg in `{revenue, demand, promo, compare, scenarios, auth, --help}` → dispatches to `shopify-forecast` CLI verb. First arg `mcp` → explicit MCP server. Enables `docker run ghcr.io/omnialta/shopify-forecast-mcp:bundled revenue --horizon 30` for one-shot CLI use.
+- **D-10:** Entrypoint = custom `/app/entrypoint.sh` script. No arg → `shopify-forecast-mcp` (MCP server over stdio). First arg in `{revenue, demand, promo, compare, scenarios, auth, --help}` → dispatches to `shopify-forecast` CLI verb. First arg `mcp` → explicit MCP server. Enables `docker run ghcr.io/mcostigliola321/shopify-forecast-mcp:bundled revenue --horizon 30` for one-shot CLI use.
 - **D-11:** Multi-store env var support in Docker = documented pattern using compose-style `SHOPIFY_FORECAST_STORES__0__SHOP` etc. (matches pydantic-settings nested-env convention from Phase 6 D-10). No special Docker logic required.
 
 ### Documentation Scope & Style
@@ -160,7 +160,7 @@ None — `gsd-tools todo match-phase 7` returned zero matches.
 - Docker `:bundled` rationale belongs in ARCHITECTURE.md, not just README — merchants on spotty connections are a real use case.
 - v0.1.0-rc1 validation checklist is worth writing into the release plan itself (not just CHANGELOG): 4 legs to verify before cutting v0.1.0.
 - Trusted Publisher OIDC registration on PyPI is a **manual prerequisite** the planner should call out — cannot be done by code. Must happen before the first tag. Same for GHCR — the package visibility must be flipped to public post-first-push.
-- Docker entrypoint dispatch enables a nice demo: `docker run --rm -e SHOPIFY_FORECAST_SHOP=... -e SHOPIFY_FORECAST_ACCESS_TOKEN=... ghcr.io/omnialta/shopify-forecast-mcp:bundled revenue --horizon 30` returns a markdown forecast with zero install.
+- Docker entrypoint dispatch enables a nice demo: `docker run --rm -e SHOPIFY_FORECAST_SHOP=... -e SHOPIFY_FORECAST_ACCESS_TOKEN=... ghcr.io/mcostigliola321/shopify-forecast-mcp:bundled revenue --horizon 30` returns a markdown forecast with zero install.
 
 </specifics>
 

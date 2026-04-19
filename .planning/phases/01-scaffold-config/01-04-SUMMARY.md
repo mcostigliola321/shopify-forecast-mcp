@@ -70,7 +70,7 @@ No other deviations.
 **Task 3** is a `checkpoint:human-verify` gate. It is **not** code — it is the requirement that CI actually run green on a real GitHub remote before Phase 1 can be declared done.
 
 **What the user needs to do:**
-1. Add a git remote pointing at the GitHub repo (e.g. `github.com/omnialta/shopify-forecast-mcp`) if one doesn't exist.
+1. Add a git remote pointing at the GitHub repo (e.g. `github.com/mcostigliola321/shopify-forecast-mcp`) if one doesn't exist.
 2. Push the current branch (or push to a feature branch and open a PR).
 3. Watch the `CI / Smoke (Python 3.11, ubuntu-latest)` and `CI / Smoke (Python 3.11, macos-latest)` jobs in the Actions tab.
 4. Expect: all 8 steps green on both legs. Smoke step prints `ok 2026-04`. Pytest shows 7 passing. `dist-ubuntu-latest` and `dist-macos-latest` artifacts each contain a `.whl` + `.tar.gz`.

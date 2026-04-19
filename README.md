@@ -1,6 +1,6 @@
 # shopify-forecast-mcp
 
-> ⚠️ **v0.1.0 Alpha** — Early release. API surface may change before v0.2. Feedback welcome: [open an issue](https://github.com/omnialta/shopify-forecast-mcp/issues).
+> ⚠️ **v0.1.0 Alpha** — Early release. API surface may change before v0.2. Feedback welcome: [open an issue](https://github.com/mcostigliola321/shopify-forecast-mcp/issues).
 
 Merchant-native MCP server that connects Google's TimesFM 2.5 time-series foundation model to your Shopify store — so your AI assistant can answer "what does next month look like?" with a real forecast grounded in your order history.
 
@@ -151,7 +151,7 @@ Run the MCP server (or any CLI verb) without installing Python:
 docker run --rm -i \
   -e SHOPIFY_FORECAST_SHOP=mystore.myshopify.com \
   -e SHOPIFY_FORECAST_ACCESS_TOKEN=shpat_xxx \
-  ghcr.io/omnialta/shopify-forecast-mcp:latest
+  ghcr.io/mcostigliola321/shopify-forecast-mcp:latest
 ```
 
 Two image variants:
@@ -170,7 +170,7 @@ v0.1.0 is the first public alpha, covering the full MVP (7 MCP tools + 4 CLI ver
 
 ## Contributing
 
-Feedback and bug reports welcome at [GitHub Issues](https://github.com/omnialta/shopify-forecast-mcp/issues). For code contributions, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the two-layer design and open a draft PR early.
+Feedback and bug reports welcome at [GitHub Issues](https://github.com/mcostigliola321/shopify-forecast-mcp/issues). For code contributions, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the two-layer design and open a draft PR early.
 
 ***
 

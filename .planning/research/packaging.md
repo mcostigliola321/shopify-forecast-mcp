@@ -68,9 +68,9 @@ shopify-forecast      = "shopify_forecast_mcp.cli:main"
 shopify-forecast-mcp  = "shopify_forecast_mcp.mcp.server:main"
 
 [project.urls]
-Homepage   = "https://github.com/omnialta/shopify-forecast-mcp"
-Repository = "https://github.com/omnialta/shopify-forecast-mcp"
-Issues     = "https://github.com/omnialta/shopify-forecast-mcp/issues"
+Homepage   = "https://github.com/mcostigliola321/shopify-forecast-mcp"
+Repository = "https://github.com/mcostigliola321/shopify-forecast-mcp"
+Issues     = "https://github.com/mcostigliola321/shopify-forecast-mcp/issues"
 
 [tool.uv]
 default-groups = ["dev"]
@@ -236,7 +236,7 @@ ENTRYPOINT ["shopify-forecast-mcp"]
 ## Distribution priority
 
 1. **PyPI** → `uvx shopify-forecast-mcp` (primary)
-2. **Docker** → `ghcr.io/omnialta/shopify-forecast-mcp:latest` (containerized / self-hosted)
+2. **Docker** → `ghcr.io/mcostigliola321/shopify-forecast-mcp:latest` (containerized / self-hosted)
 3. **`uv tool install`** → persistent local install
 4. **(Skip)** npm shim — only if user demand emerges
 

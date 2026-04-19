@@ -200,7 +200,7 @@ Per the plan's `<output>` section, the following legs of D-20 must be exercised 
 - [ ] (a) Tag push triggers the workflow (visible in GitHub Actions UI with name "Release").
 - [ ] (b) `wait-for-ci` gates correctly — both smoke check-names satisfied on the tag's SHA before `build` starts.
 - [ ] (c) PyPI upload succeeds via OIDC — no leaked token in workflow logs; `shopify-forecast-mcp==0.1.0rc1` visible on pypi.org/project/shopify-forecast-mcp/ as a pre-release.
-- [ ] (d) GHCR shows 4 manifests under `ghcr.io/omnialta/shopify-forecast-mcp`: amd64+arm64 × lazy+bundled; tags `:0.1.0-rc1`, `:latest-rc`, `:0.1.0-rc1-bundled`, `:bundled-rc` present; `:latest` and `:bundled` NOT advanced (Pitfall 5 verification).
+- [ ] (d) GHCR shows 4 manifests under `ghcr.io/mcostigliola321/shopify-forecast-mcp`: amd64+arm64 × lazy+bundled; tags `:0.1.0-rc1`, `:latest-rc`, `:0.1.0-rc1-bundled`, `:bundled-rc` present; `:latest` and `:bundled` NOT advanced (Pitfall 5 verification).
 - [ ] (e) GitHub Release `v0.1.0-rc1` shows up with `dist/*.whl` + `dist/*.tar.gz` attached and `prerelease: true` flag set.
 
 ## Known Stubs

@@ -31,7 +31,7 @@ First public alpha release. MVP covers the full 7-tool MCP surface plus a standa
 - **TimesFM 2.5 singleton loader** with compile-time config (`max_context=1024`, `max_horizon=256`, continuous quantile head, normalized inputs, flip invariance, positive inference, fix quantile crossing)
 - **Local order cache** keyed by date range with 1-hour default TTL (`SHOPIFY_FORECAST_FORECAST_CACHE_TTL`)
 - **`uvx shopify-forecast-mcp` install path** — zero manual Python setup
-- **Docker images** on GHCR: `ghcr.io/omnialta/shopify-forecast-mcp:latest` (lazy model download) and `:bundled` (TimesFM baked in at `/opt/hf-cache`), multi-arch for `linux/amd64` + `linux/arm64`
+- **Docker images** on GHCR: `ghcr.io/mcostigliola321/shopify-forecast-mcp:latest` (lazy model download) and `:bundled` (TimesFM baked in at `/opt/hf-cache`), multi-arch for `linux/amd64` + `linux/arm64`
 - **Trusted Publisher OIDC** publish flow to PyPI — no static tokens in the repo
 - **Full documentation suite**: `README.md`, `docs/SETUP.md`, `docs/TOOLS.md`, `docs/ARCHITECTURE.md` with three Mermaid diagrams
 
@@ -47,5 +47,5 @@ First public alpha release. MVP covers the full 7-tool MCP surface plus a standa
 - First-run TimesFM download is ~400MB; plan for 30-60 seconds of initial latency on uncached installs.
 - `uvx` on a Python 3.12-only machine may need `uvx --python 3.11 shopify-forecast-mcp` (pyproject is pinned to `>=3.11,<3.12`).
 
-[Unreleased]: https://github.com/omnialta/shopify-forecast-mcp/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/omnialta/shopify-forecast-mcp/releases/tag/v0.1.0
+[Unreleased]: https://github.com/mcostigliola321/shopify-forecast-mcp/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/mcostigliola321/shopify-forecast-mcp/releases/tag/v0.1.0

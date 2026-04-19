@@ -81,7 +81,7 @@ The rest of the phase is well-trodden ground: `uv publish` with OIDC is a two-co
 | R11.4 | `docs/ARCHITECTURE.md` — two-layer design, data flow diagram, key design decisions | Three required mermaid diagrams locked by D-14. GitHub renders mermaid natively in .md since 2022. |
 | R11.5 | Claude Desktop config snippet using `uvx shopify-forecast-mcp` | Plus Claude Code CLI snippet + generic MCP server spec section per D-13. |
 | R12.1 | PyPI publish via `uv publish` (Trusted Publisher OIDC from GitHub Actions) | Verified against astral-sh/trusted-publishing-examples repo. Two commands (`uv build`, `uv publish`), `id-token: write` permission, no static token. PyPI project must be registered as trusted publisher manually (prerequisite). |
-| R12.2 | Docker image (`ghcr.io/omnialta/shopify-forecast-mcp`) — multistage with `python:3.11-slim` (D-06 overrides original `python:3.12-slim`), `uv` from `ghcr.io/astral-sh/uv`, CPU torch | Pattern well-documented by Astral. CPU torch pinned via existing `[tool.uv.sources]` with pytorch-cpu index for Linux. |
+| R12.2 | Docker image (`ghcr.io/mcostigliola321/shopify-forecast-mcp`) — multistage with `python:3.11-slim` (D-06 overrides original `python:3.12-slim`), `uv` from `ghcr.io/astral-sh/uv`, CPU torch | Pattern well-documented by Astral. CPU torch pinned via existing `[tool.uv.sources]` with pytorch-cpu index for Linux. |
 | R12.3 | Two image tags: `:latest` (lazy model download) and `:bundled` (model baked into separate build stage at `/opt/hf-cache`) | Multi-stage Dockerfile with two targets. For rc tags: `:latest-rc` and `:bundled-rc`. Final stage sets `HF_HOME=/opt/hf-cache` so lazy loads use baked weights if present. |
 | R12.4 | GitHub Actions: test on Python 3.11, build wheel + sdist, publish on tag | Publish workflow = single file `.github/workflows/publish.yml`. Gated on existing `ci.yml` (D-03 forbids duplication). Use `workflow_run` dependency pattern OR an inline "wait-for-ci" job that polls via `gh api runs/:id` until success. |
 | R12.5 | Skip npx wrapper — `uvx` is the equivalent and works natively in MCP client configs | Locked by PRD + research; no npx work in this phase. |
@@ -219,7 +219,7 @@ jobs:
   id: meta-latest
   uses: docker/metadata-action@v6
   with:
-    images: ghcr.io/omnialta/shopify-forecast-mcp
+    images: ghcr.io/mcostigliola321/shopify-forecast-mcp
     tags: |
       type=semver,pattern={{version}}
       type=raw,value=latest,enable=${{ !contains(github.ref_name, 'rc') && !contains(github.ref_name, 'alpha') && !contains(github.ref_name, 'beta') }}
@@ -245,7 +245,7 @@ jobs:
   id: meta-bundled
   uses: docker/metadata-action@v6
   with:
-    images: ghcr.io/omnialta/shopify-forecast-mcp
+    images: ghcr.io/mcostigliola321/shopify-forecast-mcp
     tags: |
       type=semver,pattern={{version}}-bundled
       type=raw,value=bundled,enable=${{ !contains(github.ref_name, 'rc') && !contains(github.ref_name, 'alpha') && !contains(github.ref_name, 'beta') }}
@@ -422,8 +422,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Alpha quality — API surface may change before v0.2
 - …
 
-[Unreleased]: https://github.com/omnialta/shopify-forecast-mcp/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/omnialta/shopify-forecast-mcp/releases/tag/v0.1.0
+[Unreleased]: https://github.com/mcostigliola321/shopify-forecast-mcp/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/mcostigliola321/shopify-forecast-mcp/releases/tag/v0.1.0
 ```
 
 The `ffurrer2/extract-release-notes` action parses between `## [X.Y.Z]` headers and strips the heading, emitting exactly the body.
@@ -507,7 +507,7 @@ jobs:
 | Category | Items Found | Action Required |
 |----------|-------------|------------------|
 | Stored data | None — no databases, no local caches used by this phase | None |
-| Live service config | **PyPI project registration** (one-time, manual): no PyPI project "shopify-forecast-mcp" exists yet; maintainer must register "pending publisher" in PyPI account before first tag push. **GHCR package visibility** (one-time, manual): after first image push, flip `ghcr.io/omnialta/shopify-forecast-mcp` to public in GitHub package settings. | Document both in the release plan (Plan 4). Verify by Claude during dry-run checklist execution. |
+| Live service config | **PyPI project registration** (one-time, manual): no PyPI project "shopify-forecast-mcp" exists yet; maintainer must register "pending publisher" in PyPI account before first tag push. **GHCR package visibility** (one-time, manual): after first image push, flip `ghcr.io/mcostigliola321/shopify-forecast-mcp` to public in GitHub package settings. | Document both in the release plan (Plan 4). Verify by Claude during dry-run checklist execution. |
 | OS-registered state | None | None |
 | Secrets / env vars | **No new secrets to store** (OIDC removes PyPI token need; GITHUB_TOKEN built-in for GHCR). Existing `SHOPIFY_FORECAST_*` env var names are unchanged. | None — env var *names* unchanged; only README/SETUP.md documentation of those names is affected. |
 | Build artifacts | `dist/` from local test builds (gitignored); existing `docs/superpowers/` internal specs (unrelated; will sit alongside new docs). | None — new docs go in `docs/*.md` directly, no collision with `docs/superpowers/specs/`. |
@@ -515,9 +515,9 @@ jobs:
 **Nothing found in category "Stored data":** Verified by `grep -r "shopify_forecast_mcp" ~/.cache ~/.local/state 2>/dev/null` — no cached state outside the repo.
 
 **CRITICAL manual prerequisites for the plan to call out explicitly:**
-1. Maintainer registers a PyPI Trusted Publisher (pending) for project name `shopify-forecast-mcp`, owner `omnialta`, repo `shopify-forecast-mcp`, workflow `publish.yml`, environment `pypi`. Done once, never again. `[CITED: docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/]`
+1. Maintainer registers a PyPI Trusted Publisher (pending) for project name `shopify-forecast-mcp`, owner `mcostigliola321`, repo `shopify-forecast-mcp`, workflow `publish.yml`, environment `pypi`. Done once, never again. `[CITED: docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/]`
 2. Maintainer creates GitHub environment named `pypi` under repo Settings → Environments.
-3. After first rc1 image push, maintainer flips `ghcr.io/omnialta/shopify-forecast-mcp` package visibility to Public (else `docker pull` needs auth from end users).
+3. After first rc1 image push, maintainer flips `ghcr.io/mcostigliola321/shopify-forecast-mcp` package visibility to Public (else `docker pull` needs auth from end users).
 
 ## Common Pitfalls
 
@@ -569,7 +569,7 @@ jobs:
 **Warning signs:** End user reports "huge download" on first `uvx` invocation.
 
 ### Pitfall 7: Mermaid diagrams render on GitHub but break on PyPI's README view
-**What goes wrong:** README has mermaid blocks that render beautifully on github.com/omnialta/shopify-forecast-mcp but show as raw fenced code on pypi.org/project/shopify-forecast-mcp.
+**What goes wrong:** README has mermaid blocks that render beautifully on github.com/mcostigliola321/shopify-forecast-mcp but show as raw fenced code on pypi.org/project/shopify-forecast-mcp.
 **Why it happens:** PyPI's README renderer (Warehouse) uses a restrictive CommonMark subset + bleach sanitizer — it does NOT render mermaid.
 **How to avoid:** Put the mermaid diagram in `docs/ARCHITECTURE.md` (linked from README) rather than inline in README. Use a PNG screenshot of the rendered diagram inline in README as a fallback. Or accept that PyPI will show a code block (still informative).
 **Warning signs:** PyPI package page renders "```mermaid" as fenced code instead of a diagram.
@@ -805,7 +805,7 @@ This is the headline success criterion. No single CI test proves it. Validation 
 
 **Secondary objective signals:**
 - `uv pip install shopify-forecast-mcp==0.1.0rc1 --pre` on fresh venv completes in < 2 min on typical broadband.
-- Docker: `docker run --rm ghcr.io/omnialta/shopify-forecast-mcp:bundled-rc --help` completes in < 30s on a fresh docker-pull.
+- Docker: `docker run --rm ghcr.io/mcostigliola321/shopify-forecast-mcp:bundled-rc --help` completes in < 30s on a fresh docker-pull.
 
 ### Sampling Rate
 - **Per task commit:** `uv run pytest -x -q` (existing fast path).

@@ -138,7 +138,7 @@ In Claude Desktop config, pass the same flags via `args`:
 
 ## Docker
 
-Two image tags on GHCR (`ghcr.io/omnialta/shopify-forecast-mcp`):
+Two image tags on GHCR (`ghcr.io/mcostigliola321/shopify-forecast-mcp`):
 
 | Tag | Size | Model load |
 |-----|------|------------|
@@ -151,7 +151,7 @@ Run the MCP server:
 docker run --rm -i \
   -e SHOPIFY_FORECAST_SHOP=mystore.myshopify.com \
   -e SHOPIFY_FORECAST_ACCESS_TOKEN=shpat_xxxxxxxxxxxxxxxxxxxxxxxx \
-  ghcr.io/omnialta/shopify-forecast-mcp:latest
+  ghcr.io/mcostigliola321/shopify-forecast-mcp:latest
 ```
 
 Or dispatch a CLI verb directly:
@@ -160,7 +160,7 @@ Or dispatch a CLI verb directly:
 docker run --rm \
   -e SHOPIFY_FORECAST_SHOP=mystore.myshopify.com \
   -e SHOPIFY_FORECAST_ACCESS_TOKEN=shpat_xxxxxxxxxxxxxxxxxxxxxxxx \
-  ghcr.io/omnialta/shopify-forecast-mcp:bundled revenue --horizon 30
+  ghcr.io/mcostigliola321/shopify-forecast-mcp:bundled revenue --horizon 30
 ```
 
 > **Docker limitation:** the browser-based OAuth flow (`shopify-forecast auth`) cannot work inside a container — there's no browser. You MUST supply `SHOPIFY_FORECAST_ACCESS_TOKEN` via `-e` when running in Docker. This is enforced by the container's DirectBackend-only mode.
@@ -176,7 +176,7 @@ docker run --rm \
         "run", "--rm", "-i",
         "-e", "SHOPIFY_FORECAST_SHOP=mystore.myshopify.com",
         "-e", "SHOPIFY_FORECAST_ACCESS_TOKEN=shpat_xxxxxxxxxxxxxxxxxxxxxxxx",
-        "ghcr.io/omnialta/shopify-forecast-mcp:bundled"
+        "ghcr.io/mcostigliola321/shopify-forecast-mcp:bundled"
       ]
     }
   }
@@ -306,7 +306,7 @@ Add `--json` to any verb for machine-readable output.
 
 **"No compatible Python found"** — `uvx` picks the latest installed Python by default. Force 3.11 with `uvx --python 3.11 shopify-forecast-mcp`.
 
-**First run is slow** — TimesFM 2.5 weights (~400MB) download on first forecast. Subsequent calls are <10s. For offline use, `docker run ghcr.io/omnialta/shopify-forecast-mcp:bundled` has the weights baked in.
+**First run is slow** — TimesFM 2.5 weights (~400MB) download on first forecast. Subsequent calls are <10s. For offline use, `docker run ghcr.io/mcostigliola321/shopify-forecast-mcp:bundled` has the weights baked in.
 
 **"No orders found"** — verify `SHOPIFY_FORECAST_SHOP` matches your exact `.myshopify.com` domain, and the access token has all four required scopes (especially `read_all_orders` for more than 60 days of history).
 

@@ -123,7 +123,7 @@ Demo use case (bundled variant, zero-install one-shot forecast):
 docker run --rm \
   -e SHOPIFY_FORECAST_SHOP=mystore.myshopify.com \
   -e SHOPIFY_FORECAST_ACCESS_TOKEN=shpat_xxx \
-  ghcr.io/omnialta/shopify-forecast-mcp:bundled \
+  ghcr.io/mcostigliola321/shopify-forecast-mcp:bundled \
   revenue --horizon 30
 ```
 

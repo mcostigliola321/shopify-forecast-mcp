@@ -177,7 +177,7 @@ Plans:
 
 **Success criteria**:
 - Fresh laptop, no prior Python setup → installs and runs via `uvx shopify-forecast-mcp` in under 5 minutes
-- `docker run ghcr.io/omnialta/shopify-forecast-mcp:bundled` starts without an internet download
+- `docker run ghcr.io/mcostigliola321/shopify-forecast-mcp:bundled` starts without an internet download
 - PyPI publish on tag succeeds via OIDC with no static token
 - README quick-start walkthrough reproduces the "what does next month look like?" flow
 

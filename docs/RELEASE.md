@@ -22,7 +22,7 @@ These three setup steps happen ONCE before the first tag push. Skipping any of t
 2. Click **Add a new pending publisher**.
 3. Fill in:
    - **PyPI Project Name:** `shopify-forecast-mcp`
-   - **Owner:** `omnialta`
+   - **Owner:** `mcostigliola321`
    - **Repository name:** `shopify-forecast-mcp`
    - **Workflow name:** `publish.yml`
    - **Environment name:** `pypi`
@@ -130,26 +130,26 @@ uvx --prerelease=allow shopify-forecast-mcp@0.1.0rc1 < /dev/null
 
 **Visibility flip (ONE-TIME, do now):**
 
-1. Visit https://github.com/omnialta/shopify-forecast-mcp/packages (or wherever the owner is).
+1. Visit https://github.com/mcostigliola321/shopify-forecast-mcp/packages (or wherever the owner is).
 2. Click the `shopify-forecast-mcp` container package.
 3. **Package settings → Change visibility → Public → confirm**.
 
 Then verify both tags pull + run:
 
 ```bash
-docker pull ghcr.io/omnialta/shopify-forecast-mcp:latest-rc
-docker pull ghcr.io/omnialta/shopify-forecast-mcp:bundled-rc
+docker pull ghcr.io/mcostigliola321/shopify-forecast-mcp:latest-rc
+docker pull ghcr.io/mcostigliola321/shopify-forecast-mcp:bundled-rc
 
 # Lazy variant: needs network for first model download
-docker run --rm ghcr.io/omnialta/shopify-forecast-mcp:latest-rc --help
+docker run --rm ghcr.io/mcostigliola321/shopify-forecast-mcp:latest-rc --help
 # Expect: CLI help output.
 
 # Bundled variant: works offline
-docker run --rm --network=none ghcr.io/omnialta/shopify-forecast-mcp:bundled-rc --help
+docker run --rm --network=none ghcr.io/mcostigliola321/shopify-forecast-mcp:bundled-rc --help
 # Expect: CLI help output, no network errors.
 
 # Multi-arch manifest check
-docker buildx imagetools inspect ghcr.io/omnialta/shopify-forecast-mcp:latest-rc
+docker buildx imagetools inspect ghcr.io/mcostigliola321/shopify-forecast-mcp:latest-rc
 # Expect: Manifests for linux/amd64 AND linux/arm64.
 ```
 
@@ -203,8 +203,8 @@ gh run watch $(gh run list --workflow=publish.yml --limit=1 --json databaseId --
 ## Post-release verification
 
 1. `uvx shopify-forecast-mcp --help` (without `--prerelease=allow`) resolves cleanly on a fresh machine.
-2. `docker pull ghcr.io/omnialta/shopify-forecast-mcp:latest` succeeds (public package).
-3. `docker run --rm --network=none ghcr.io/omnialta/shopify-forecast-mcp:bundled --help` works.
+2. `docker pull ghcr.io/mcostigliola321/shopify-forecast-mcp:latest` succeeds (public package).
+3. `docker run --rm --network=none ghcr.io/mcostigliola321/shopify-forecast-mcp:bundled --help` works.
 4. README banner still reads "⚠️ v0.1.0 Alpha" (don't bump to beta yet — D-19 locks Alpha classifier).
 5. Open a pinned GitHub Issue: **"v0.1.0 feedback wanted"** linking to the Release. This + README banner constitute the full announce surface per D-22 (repo-only, no external socials for v0.1.0).
 
@@ -217,7 +217,7 @@ If a v0.1.0 tag ships a broken release, do NOT yank or force-push — PyPI and G
 ### Patch-release procedure
 
 1. **Cannot yank from PyPI** without breaking downstream pins. Instead, cut a `v0.1.1` patch release with the fix.
-2. Delete GHCR tags for the bad version: `gh api --method DELETE /orgs/omnialta/packages/container/shopify-forecast-mcp/versions/<version-id>`.
+2. Delete GHCR tags for the bad version: `gh api --method DELETE /orgs/mcostigliola321/packages/container/shopify-forecast-mcp/versions/<version-id>`.
 3. Mark the GitHub Release as "pre-release" (flag it in the UI) + add a warning note to the description.
 4. In README banner, link to the new patch release's Release notes.
 
