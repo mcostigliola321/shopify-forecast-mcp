@@ -149,10 +149,12 @@ Plans:
 **Goal**: What-if scenario planning, inventory-aware reorder suggestions, and multi-store support.
 **Depends on**: Phase 5
 **Requirements**: R8.6 (`compare_scenarios`), plus multi-store support (deferred from MVP per PROJECT.md "Out of Scope → deferred to Phase 3")
-**Plans**:
-1. **`compare_scenarios` tool** — what-if forecasting with 2–4 scenarios varying `promo_dates` and `discount_depth`. Builds future covariates per scenario, reuses XReg pathway from Phase 5, returns a side-by-side markdown comparison table.
-2. **Inventory-aware reorder** — extend `forecast_demand` to produce reorder alerts using `read_inventory` data: days-until-stockout, suggested reorder qty, lead-time param.
-3. **Multi-store support** — config shape for multiple store credentials, store selector on every tool, cache isolation per store. Document Claude Desktop config for multi-store setup.
+**Plans:** 3 plans, 2 waves
+
+Plans:
+- [ ] 06-01-PLAN.md — compare_scenarios core module + MCP tool + CLI verb (Wave 1)
+- [ ] 06-02-PLAN.md — Inventory-aware reorder alerts extending forecast_demand (Wave 1, parallel with 06-01)
+- [ ] 06-03-PLAN.md — Multi-store config, store registry, store param on all tools + CLI (Wave 2, depends on 06-01 + 06-02)
 
 **Success criteria**:
 - `compare_scenarios` with 3 promo scenarios returns 3 differentiated forecasts in one markdown response
