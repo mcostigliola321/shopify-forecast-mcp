@@ -22,6 +22,7 @@ from shopify_forecast_mcp.core.analytics import (
 )
 from shopify_forecast_mcp.core.forecast_result import ForecastResult
 from shopify_forecast_mcp.core.forecaster import get_engine
+from shopify_forecast_mcp.core.scenarios import format_scenario_comparison, run_scenarios
 from shopify_forecast_mcp.core.shopify_backend import create_backend
 from shopify_forecast_mcp.core.shopify_client import CLI_AUTH_SCOPES, REQUIRED_SCOPES, ShopifyClient
 from shopify_forecast_mcp.core.timeseries import (
@@ -85,6 +86,14 @@ def build_parser() -> argparse.ArgumentParser:
     cmp_p.add_argument("--period-b-start", help="Custom period B start (YYYY-MM-DD)")
     cmp_p.add_argument("--period-b-end", help="Custom period B end (YYYY-MM-DD)")
     cmp_p.add_argument("--json", action="store_true", dest="json_output", help="Output JSON instead of markdown")
+
+    # -- scenarios subcommand (R8.6) --
+    scn_p = sub.add_parser("scenarios", help="Compare what-if promotional scenarios")
+    scn_p.add_argument("--scenarios", required=True, help="JSON array of scenarios or path to JSON file")
+    scn_p.add_argument("--horizon", type=int, default=30, help="Days to forecast (default: 30)")
+    scn_p.add_argument("--context", type=int, default=365, help="Days of history (default: 365)")
+    scn_p.add_argument("--country", default="US", help="Country for holiday covariates (default: US)")
+    scn_p.add_argument("--json", action="store_true", dest="json_output", help="Output JSON instead of markdown")
 
     return parser
 
@@ -421,6 +430,76 @@ async def _run_compare(args: argparse.Namespace) -> int:
     return 0
 
 
+async def _run_scenarios(args: argparse.Namespace) -> int:
+    """Execute scenario comparison and print results."""
+    # Parse --scenarios: JSON string or file path
+    raw = args.scenarios.strip()
+    if raw.startswith("["):
+        try:
+            scenario_list = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            print(f"Error: Invalid JSON in --scenarios: {exc}", file=sys.stderr)
+            return 1
+    else:
+        # Treat as file path
+        import os
+
+        if not os.path.isfile(raw):
+            print(f"Error: File not found: {raw}", file=sys.stderr)
+            return 1
+        with open(raw) as f:
+            try:
+                scenario_list = json.load(f)
+            except json.JSONDecodeError as exc:
+                print(f"Error: Invalid JSON in file {raw}: {exc}", file=sys.stderr)
+                return 1
+
+    if not isinstance(scenario_list, list):
+        print("Error: --scenarios must be a JSON array.", file=sys.stderr)
+        return 1
+
+    # Validate scenario dicts
+    required_keys = {"name", "promo_start", "promo_end", "discount_depth"}
+    for i, s in enumerate(scenario_list):
+        if not isinstance(s, dict):
+            print(f"Error: Scenario {i} is not a dict.", file=sys.stderr)
+            return 1
+        missing = required_keys - set(s.keys())
+        if missing:
+            print(f"Error: Scenario {i} missing keys: {missing}", file=sys.stderr)
+            return 1
+
+    settings = get_settings()
+    backend = create_backend(settings)
+    async with ShopifyClient(backend, settings) as shopify:
+        end = date.today()
+        start = end - timedelta(days=args.context)
+
+        log.info("Fetching %dd of orders for scenario comparison...", args.context)
+        orders = await shopify.fetch_orders(start.isoformat(), end.isoformat())
+
+        if not orders:
+            print("No orders found in the requested date range.", file=sys.stderr)
+            return 1
+
+        engine = get_engine(settings)
+        engine.load()
+
+        results = await run_scenarios(
+            orders, scenario_list, args.horizon, engine, args.country
+        )
+
+        if args.json_output:
+            import dataclasses
+
+            out = [dataclasses.asdict(r) for r in results]
+            print(json.dumps(out, indent=2))
+        else:
+            print(format_scenario_comparison(results, args.horizon))
+
+    return 0
+
+
 def main() -> int:
     """Sync entry point for the shopify-forecast console script."""
     parser = build_parser()
@@ -440,6 +519,8 @@ def main() -> int:
         return asyncio.run(_run_promo(args))
     elif args.command == "compare":
         return asyncio.run(_run_compare(args))
+    elif args.command == "scenarios":
+        return asyncio.run(_run_scenarios(args))
     else:
         parser.print_help()
         return 0

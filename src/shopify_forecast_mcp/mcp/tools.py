@@ -18,6 +18,10 @@ from shopify_forecast_mcp.core.analytics import (
     get_seasonality as _get_seasonality,
 )
 from shopify_forecast_mcp.core.forecast_result import ForecastResult
+from shopify_forecast_mcp.core.scenarios import (
+    format_scenario_comparison,
+    run_scenarios,
+)
 from shopify_forecast_mcp.core.timeseries import (
     clean_series,
     orders_to_daily_series,
@@ -598,3 +602,75 @@ async def detect_anomalies(
     except Exception as e:
         log.exception("detect_anomalies failed")
         return f"**Error running detect_anomalies**\n\n{type(e).__name__}: {e}"
+
+
+# ---------------------------------------------------------------------------
+# compare_scenarios
+# ---------------------------------------------------------------------------
+
+
+class ScenarioInput(BaseModel):
+    """Schema for a single promotional scenario."""
+
+    name: str = Field(..., description="Scenario name, e.g. 'Aggressive'")
+    promo_start: str = Field(..., description="Promo start date (YYYY-MM-DD)")
+    promo_end: str = Field(..., description="Promo end date (YYYY-MM-DD)")
+    discount_depth: float = Field(
+        ..., ge=0.0, le=1.0, description="Discount depth (0-1)"
+    )
+
+
+class CompareScenariosParams(BaseModel):
+    """Input schema for the compare_scenarios tool."""
+
+    scenarios: list[ScenarioInput] = Field(
+        ..., min_length=2, max_length=4, description="2-4 named scenarios"
+    )
+    horizon_days: int = Field(30, ge=1, le=365, description="Days to forecast")
+    context_days: int = Field(
+        365, ge=30, le=1095, description="Days of historical data"
+    )
+    country: str = Field("US", description="Country for holiday covariates")
+
+
+@mcp.tool()
+async def compare_scenarios(
+    params: CompareScenariosParams,
+    ctx: Context[ServerSession, AppContext],
+) -> str:
+    """Compare 2-4 promotional scenarios with what-if forecasting.
+
+    Each scenario specifies a promo period and discount depth. Returns a
+    side-by-side markdown table with revenue projections, confidence bands,
+    and a recommendation for the best-performing scenario.
+    """
+    app: AppContext = ctx.request_context.lifespan_context
+    try:
+        end = date.today()
+        start = end - timedelta(days=params.context_days)
+
+        await ctx.info(
+            f"Pulling {params.context_days}d of order history for scenario comparison..."
+        )
+        orders = await app.shopify.fetch_orders(
+            start_date=start.isoformat(),
+            end_date=end.isoformat(),
+        )
+
+        if not orders:
+            return "**No orders found** in the requested date range."
+
+        scenario_dicts = [s.model_dump() for s in params.scenarios]
+        await ctx.info(
+            f"Running {len(scenario_dicts)} scenarios over {params.horizon_days}d horizon..."
+        )
+        results = await run_scenarios(
+            orders, scenario_dicts, params.horizon_days, app.forecaster, params.country
+        )
+        return format_scenario_comparison(results, params.horizon_days)
+
+    except ValueError as e:
+        return f"**Error running compare_scenarios**\n\n{e}"
+    except Exception as e:
+        log.exception("compare_scenarios failed")
+        return f"**Error running compare_scenarios**\n\n{type(e).__name__}: {e}"
