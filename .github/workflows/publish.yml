@@ -1,0 +1,227 @@
+# .github/workflows/publish.yml
+# Tag-triggered release pipeline for shopify-forecast-mcp.
+# Implements D-01 through D-07 of Phase 7 CONTEXT.md.
+# Gated on ci.yml being green for the same SHA (D-03 — does not duplicate test logic).
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # Job 1: wait for ci.yml smoke matrix to pass on this SHA (D-03).
+  wait-for-ci:
+    name: Wait for ci.yml (same SHA)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      checks: read
+      actions: read
+      contents: read
+    steps:
+      - name: Wait for ubuntu smoke
+        uses: lewagon/wait-on-check-action@v1.4.0
+        with:
+          ref: ${{ github.sha }}
+          check-name: 'Smoke (Python 3.11, ubuntu-latest)'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 15
+          allowed-conclusions: success
+
+      - name: Wait for macos smoke
+        uses: lewagon/wait-on-check-action@v1.4.0
+        with:
+          ref: ${{ github.sha }}
+          check-name: 'Smoke (Python 3.11, macos-latest)'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 15
+          allowed-conclusions: success
+
+  # Job 2: build wheel + sdist once; share via artifact.
+  build:
+    name: Build wheel + sdist
+    needs: wait-for-ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install Python 3.11
+        run: uv python install 3.11
+
+      - name: Build
+        run: uv build
+
+      - name: Twine check (sanity)
+        run: uvx --from twine twine check dist/*
+
+      - name: Verify no direct URL in METADATA (D-23 gate)
+        # Belt-and-braces: if Plan 01's dep swap ever regresses, fail here
+        # rather than at the PyPI upload endpoint.
+        run: |
+          python -m zipfile -e dist/*.whl /tmp/whl-inspect
+          if grep -R 'git+https' /tmp/whl-inspect/*.dist-info/METADATA; then
+            echo "::error::Wheel METADATA contains direct URL references — PyPI will reject. Fix pyproject.toml (D-23)." >&2
+            exit 1
+          fi
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  # Job 3: publish to PyPI via Trusted Publisher OIDC (D-05). No static token.
+  publish-pypi:
+    name: Publish to PyPI (OIDC)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: pypi
+      url: https://pypi.org/project/shopify-forecast-mcp/
+    permissions:
+      id-token: write       # REQUIRED for OIDC exchange
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install Python 3.11
+        run: uv python install 3.11
+
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        # uv publish with no flags: auto-detects ACTIONS_ID_TOKEN_REQUEST_TOKEN
+        # + the trusted-publisher config on PyPI, exchanges for a short-lived
+        # upload token. PEP 440: v0.1.0-rc1 uploads as a pre-release automatically.
+        run: uv publish
+
+  # Job 4: build + push multi-arch Docker images to GHCR.
+  # Two variants (runtime-lazy, runtime-bundled) via job matrix.
+  # Mutable tags (:latest, :bundled) ONLY advance on non-rc tags (Pitfall 5 mitigation).
+  # rc tags push :latest-rc / :bundled-rc. Per D-07.
+  publish-docker:
+    name: Publish Docker ${{ matrix.variant }} (multi-arch)
+    needs: [build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60      # bundled variant downloads ~450MB model weights
+    permissions:
+      contents: read
+      packages: write        # REQUIRED for GHCR push
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [lazy, bundled]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker meta (lazy)
+        if: matrix.variant == 'lazy'
+        id: meta-lazy
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=latest,enable=${{ !contains(github.ref_name, 'rc') && !contains(github.ref_name, 'alpha') && !contains(github.ref_name, 'beta') }}
+            type=raw,value=latest-rc,enable=${{ contains(github.ref_name, 'rc') }}
+
+      - name: Docker meta (bundled)
+        if: matrix.variant == 'bundled'
+        id: meta-bundled
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}-bundled
+            type=raw,value=bundled,enable=${{ !contains(github.ref_name, 'rc') && !contains(github.ref_name, 'alpha') && !contains(github.ref_name, 'beta') }}
+            type=raw,value=bundled-rc,enable=${{ contains(github.ref_name, 'rc') }}
+
+      - name: Build + push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile
+          target: runtime-${{ matrix.variant }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ matrix.variant == 'lazy' && steps.meta-lazy.outputs.tags || steps.meta-bundled.outputs.tags }}
+          labels: ${{ matrix.variant == 'lazy' && steps.meta-lazy.outputs.labels || steps.meta-bundled.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.variant }}
+          cache-to: type=gha,scope=${{ matrix.variant }},mode=max
+
+  # Job 5: create GitHub Release with dist/* + CHANGELOG body (D-04 + D-21).
+  create-release:
+    name: Create GitHub Release
+    needs: [publish-pypi, publish-docker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write        # REQUIRED to create releases
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5   # extract-release-notes needs CHANGELOG.md
+
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Extract release notes from CHANGELOG.md
+        id: changelog
+        uses: ffurrer2/extract-release-notes@v3
+        with:
+          changelog_file: CHANGELOG.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body: ${{ steps.changelog.outputs.release_notes }}
+          prerelease: ${{ contains(github.ref_name, 'rc') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') }}
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
