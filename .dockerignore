@@ -1,0 +1,60 @@
+# .dockerignore — excludes paths from the Docker build context.
+# Rationale: D-09 (no secrets baked in), plus build-speed optimizations.
+#
+# IMPORTANT: `Dockerfile` and `docker-entrypoint.sh` are INTENTIONALLY NOT
+# listed here. They are consumed by Docker's build process (the Dockerfile
+# is the build recipe; docker-entrypoint.sh is COPY'd into the image at
+# /app/entrypoint.sh). Excluding them would cause COPY to fail.
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+
+# Environment / secrets (NEVER bake into image — D-09)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Node (unlikely but belt-and-braces against transitive toolchains)
+node_modules/
+
+# Project-specific paths that don't belong in a runtime image
+.planning/
+.claude/
+tests/
+scripts/
+docs/superpowers/
+uv.lock.bak
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Docker itself (the .dockerignore file; NOT Dockerfile/entrypoint which
+# must remain in-context for COPY)
+.dockerignore
