@@ -54,6 +54,7 @@ class ForecastRevenueParams(BaseModel):
     include_chart_data: bool = Field(
         False, description="If true, append raw forecast values as a JSON block"
     )
+    store: str | None = Field(None, description="Store domain or label (multi-store mode)")
 
 
 @mcp.tool()
@@ -67,12 +68,17 @@ async def forecast_revenue(
     """
     app: AppContext = ctx.request_context.lifespan_context
     try:
+        try:
+            client = app.get_client(params.store)
+        except ValueError as e:
+            return f"**Store not found**\n\n{e}"
+
         # Compute date range
         end = date.today()
         start = end - timedelta(days=params.context_days)
 
         await ctx.info(f"Pulling {params.context_days}d of order history...")
-        orders = await app.shopify.fetch_orders(
+        orders = await client.fetch_orders(
             start_date=start.isoformat(),
             end_date=end.isoformat(),
         )
@@ -183,6 +189,7 @@ class ForecastDemandParams(BaseModel):
         le=3.0,
         description="Safety factor for reorder qty (default: 1.2, i.e. 20% buffer)",
     )
+    store: str | None = Field(None, description="Store domain or label (multi-store mode)")
 
 
 @mcp.tool()
@@ -198,11 +205,16 @@ async def forecast_demand(
     """
     app: AppContext = ctx.request_context.lifespan_context
     try:
+        try:
+            client = app.get_client(params.store)
+        except ValueError as e:
+            return f"**Store not found**\n\n{e}"
+
         end = date.today()
         start = end - timedelta(days=365)
 
         await ctx.info("Fetching order history for demand analysis...")
-        orders = await app.shopify.fetch_orders(
+        orders = await client.fetch_orders(
             start_date=start.isoformat(),
             end_date=end.isoformat(),
         )
@@ -327,7 +339,7 @@ async def forecast_demand(
         reorder_section = ""
         try:
             await ctx.info("Checking inventory levels for reorder alerts...")
-            inventory = await app.shopify.fetch_inventory()
+            inventory = await client.fetch_inventory()
             if inventory:
                 # Build daily demand map: product_id -> avg daily demand from forecast
                 demand_map: dict[str, float] = {}
@@ -370,6 +382,7 @@ class AnalyzePromotionParams(BaseModel):
     baseline_days: int = Field(
         30, ge=7, le=365, description="Days before promo to use as baseline"
     )
+    store: str | None = Field(None, description="Store domain or label (multi-store mode)")
 
 
 @mcp.tool()
@@ -380,6 +393,11 @@ async def analyze_promotion(
     """Analyze a past promotion's impact vs baseline: revenue lift, order lift, AOV change, post-promo hangover, and product cannibalization."""
     app: AppContext = ctx.request_context.lifespan_context
     try:
+        try:
+            client = app.get_client(params.store)
+        except ValueError as e:
+            return f"**Store not found**\n\n{e}"
+
         # Parse dates (T-05-08)
         try:
             promo_start = date.fromisoformat(params.promo_start)
@@ -402,7 +420,7 @@ async def analyze_promotion(
         fetch_end = promo_end + timedelta(days=promo_duration + 7)
 
         await ctx.info("Fetching orders for promotion analysis...")
-        orders = await app.shopify.fetch_orders(
+        orders = await client.fetch_orders(
             start_date=baseline_start.isoformat(),
             end_date=fetch_end.isoformat(),
         )
@@ -435,6 +453,7 @@ class ComparePeriodsParams(BaseModel):
     group_by: str | None = Field(
         None, description="Optional: product_id, collection_id, or sku"
     )
+    store: str | None = Field(None, description="Store domain or label (multi-store mode)")
 
 
 @mcp.tool()
@@ -445,6 +464,11 @@ async def compare_periods(
     """Compare two time periods across revenue, orders, units, AOV, discount rate, and units per order."""
     app: AppContext = ctx.request_context.lifespan_context
     try:
+        try:
+            client = app.get_client(params.store)
+        except ValueError as e:
+            return f"**Store not found**\n\n{e}"
+
         # Parse dates (T-05-08)
         try:
             a_start = date.fromisoformat(params.period_a_start)
@@ -468,7 +492,7 @@ async def compare_periods(
         fetch_end = max(a_end, b_end)
 
         await ctx.info("Fetching orders for period comparison...")
-        orders = await app.shopify.fetch_orders(
+        orders = await client.fetch_orders(
             start_date=fetch_start.isoformat(),
             end_date=fetch_end.isoformat(),
         )
@@ -501,6 +525,7 @@ class GetSeasonalityParams(BaseModel):
     metric: Literal["revenue", "orders", "units", "aov"] = Field(
         "revenue", description="Metric to analyze"
     )
+    store: str | None = Field(None, description="Store domain or label (multi-store mode)")
 
 
 @mcp.tool()
@@ -511,11 +536,16 @@ async def get_seasonality(
     """Identify seasonal patterns in store data by day of week, month, or quarter."""
     app: AppContext = ctx.request_context.lifespan_context
     try:
+        try:
+            client = app.get_client(params.store)
+        except ValueError as e:
+            return f"**Store not found**\n\n{e}"
+
         end = date.today()
         start = end - timedelta(days=params.lookback_days)
 
         await ctx.info("Fetching orders for seasonality analysis...")
-        orders = await app.shopify.fetch_orders(
+        orders = await client.fetch_orders(
             start_date=start.isoformat(),
             end_date=end.isoformat(),
         )
@@ -556,6 +586,7 @@ class DetectAnomaliesParams(BaseModel):
     metric: Literal["revenue", "orders", "units", "aov"] = Field(
         "revenue", description="Single metric to check for anomalies"
     )
+    store: str | None = Field(None, description="Store domain or label (multi-store mode)")
 
 
 @mcp.tool()
@@ -566,13 +597,18 @@ async def detect_anomalies(
     """Detect anomalous days where actual values fell outside expected forecast bands."""
     app: AppContext = ctx.request_context.lifespan_context
     try:
+        try:
+            client = app.get_client(params.store)
+        except ValueError as e:
+            return f"**Store not found**\n\n{e}"
+
         # Fetch extra context for better forecast quality
         end = date.today()
         extra_context = 90
         start = end - timedelta(days=params.lookback_days + extra_context)
 
         await ctx.info("Fetching orders for anomaly detection...")
-        orders = await app.shopify.fetch_orders(
+        orders = await client.fetch_orders(
             start_date=start.isoformat(),
             end_date=end.isoformat(),
         )
@@ -679,6 +715,7 @@ class CompareScenariosParams(BaseModel):
         365, ge=30, le=1095, description="Days of historical data"
     )
     country: str = Field("US", description="Country for holiday covariates")
+    store: str | None = Field(None, description="Store domain or label (multi-store mode)")
 
 
 @mcp.tool()
@@ -694,13 +731,18 @@ async def compare_scenarios(
     """
     app: AppContext = ctx.request_context.lifespan_context
     try:
+        try:
+            client = app.get_client(params.store)
+        except ValueError as e:
+            return f"**Store not found**\n\n{e}"
+
         end = date.today()
         start = end - timedelta(days=params.context_days)
 
         await ctx.info(
             f"Pulling {params.context_days}d of order history for scenario comparison..."
         )
-        orders = await app.shopify.fetch_orders(
+        orders = await client.fetch_orders(
             start_date=start.isoformat(),
             end_date=end.isoformat(),
         )

@@ -15,7 +15,7 @@ import numpy as np
 from dateutil.relativedelta import relativedelta
 
 # R9.3: NO imports from shopify_forecast_mcp.mcp -- CLI is MCP-independent
-from shopify_forecast_mcp.config import get_settings
+from shopify_forecast_mcp.config import Settings, StoreConfig, get_settings
 from shopify_forecast_mcp.core.analytics import (
     analyze_promotion as _analyze_promotion,
     compare_periods as _compare_periods,
@@ -41,6 +41,16 @@ log = logging.getLogger("shopify-forecast")
 FREQ_MAP = {"daily": "D", "weekly": "W", "monthly": "M"}
 
 
+def _resolve_store_config(settings: Settings, store: str) -> StoreConfig | None:
+    """Find a StoreConfig by domain or label."""
+    if store == settings.shop:
+        return StoreConfig(shop=settings.shop, access_token=settings.access_token)
+    for sc in settings.stores:
+        if sc.shop == store or sc.label == store:
+            return sc
+    return None
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build and return the argparse parser with revenue and demand subcommands."""
     parser = argparse.ArgumentParser(
@@ -55,6 +65,7 @@ def build_parser() -> argparse.ArgumentParser:
     rev.add_argument("--context", type=int, default=365, help="Days of history to use (default: 365)")
     rev.add_argument("--frequency", choices=["daily", "weekly", "monthly"], default="daily")
     rev.add_argument("--json", action="store_true", dest="json_output", help="Output raw JSON instead of markdown")
+    rev.add_argument("--store", default=None, help="Store domain or label (multi-store mode)")
 
     # -- demand subcommand --
     dem = sub.add_parser("demand", help="Forecast demand by product/collection/SKU")
@@ -64,6 +75,7 @@ def build_parser() -> argparse.ArgumentParser:
     dem.add_argument("--horizon", type=int, default=30)
     dem.add_argument("--top-n", type=int, default=10)
     dem.add_argument("--json", action="store_true", dest="json_output")
+    dem.add_argument("--store", default=None, help="Store domain or label (multi-store mode)")
 
     # -- auth subcommand --
     auth_p = sub.add_parser("auth", help="Authenticate with Shopify via browser OAuth")
@@ -76,6 +88,7 @@ def build_parser() -> argparse.ArgumentParser:
     promo_p.add_argument("--name", default="", help="Optional promo name")
     promo_p.add_argument("--baseline-days", type=int, default=30, help="Baseline period in days (default: 30)")
     promo_p.add_argument("--json", action="store_true", dest="json_output", help="Output JSON instead of markdown")
+    promo_p.add_argument("--store", default=None, help="Store domain or label (multi-store mode)")
 
     # -- compare subcommand (D-23) --
     cmp_p = sub.add_parser("compare", help="Compare two time periods")
@@ -86,6 +99,7 @@ def build_parser() -> argparse.ArgumentParser:
     cmp_p.add_argument("--period-b-start", help="Custom period B start (YYYY-MM-DD)")
     cmp_p.add_argument("--period-b-end", help="Custom period B end (YYYY-MM-DD)")
     cmp_p.add_argument("--json", action="store_true", dest="json_output", help="Output JSON instead of markdown")
+    cmp_p.add_argument("--store", default=None, help="Store domain or label (multi-store mode)")
 
     # -- scenarios subcommand (R8.6) --
     scn_p = sub.add_parser("scenarios", help="Compare what-if promotional scenarios")
@@ -94,6 +108,7 @@ def build_parser() -> argparse.ArgumentParser:
     scn_p.add_argument("--context", type=int, default=365, help="Days of history (default: 365)")
     scn_p.add_argument("--country", default="US", help="Country for holiday covariates (default: US)")
     scn_p.add_argument("--json", action="store_true", dest="json_output", help="Output JSON instead of markdown")
+    scn_p.add_argument("--store", default=None, help="Store domain or label (multi-store mode)")
 
     return parser
 
@@ -101,6 +116,15 @@ def build_parser() -> argparse.ArgumentParser:
 async def _run_revenue(args: argparse.Namespace) -> int:
     """Execute the revenue forecast and print results."""
     settings = get_settings()
+    if args.store:
+        store_config = _resolve_store_config(settings, args.store)
+        if store_config is None:
+            print(f"Error: Unknown store '{args.store}'", file=sys.stderr)
+            return 1
+        settings = settings.model_copy(update={
+            "shop": store_config.shop,
+            "access_token": store_config.access_token,
+        })
     backend = create_backend(settings)
     async with ShopifyClient(backend, settings) as shopify:
         end = date.today()
@@ -154,6 +178,15 @@ async def _run_revenue(args: argparse.Namespace) -> int:
 async def _run_demand(args: argparse.Namespace) -> int:
     """Execute the demand forecast and print results."""
     settings = get_settings()
+    if args.store:
+        store_config = _resolve_store_config(settings, args.store)
+        if store_config is None:
+            print(f"Error: Unknown store '{args.store}'", file=sys.stderr)
+            return 1
+        settings = settings.model_copy(update={
+            "shop": store_config.shop,
+            "access_token": store_config.access_token,
+        })
     group_by_map = {"product": "product_id", "collection": "collection_id", "sku": "sku"}
 
     backend = create_backend(settings)
@@ -310,6 +343,15 @@ async def _run_promo(args: argparse.Namespace) -> int:
     fetch_end = promo_end + timedelta(days=promo_duration + 7)
 
     settings = get_settings()
+    if args.store:
+        store_config = _resolve_store_config(settings, args.store)
+        if store_config is None:
+            print(f"Error: Unknown store '{args.store}'", file=sys.stderr)
+            return 1
+        settings = settings.model_copy(update={
+            "shop": store_config.shop,
+            "access_token": store_config.access_token,
+        })
     backend = create_backend(settings)
     async with ShopifyClient(backend, settings) as shopify:
         log.info("Fetching orders for promotion analysis...")
@@ -396,6 +438,15 @@ async def _run_compare(args: argparse.Namespace) -> int:
     fetch_end = max(a_end, b_end)
 
     settings = get_settings()
+    if args.store:
+        store_config = _resolve_store_config(settings, args.store)
+        if store_config is None:
+            print(f"Error: Unknown store '{args.store}'", file=sys.stderr)
+            return 1
+        settings = settings.model_copy(update={
+            "shop": store_config.shop,
+            "access_token": store_config.access_token,
+        })
     backend = create_backend(settings)
     async with ShopifyClient(backend, settings) as shopify:
         log.info("Fetching orders for period comparison...")
@@ -470,6 +521,15 @@ async def _run_scenarios(args: argparse.Namespace) -> int:
             return 1
 
     settings = get_settings()
+    if args.store:
+        store_config = _resolve_store_config(settings, args.store)
+        if store_config is None:
+            print(f"Error: Unknown store '{args.store}'", file=sys.stderr)
+            return 1
+        settings = settings.model_copy(update={
+            "shop": store_config.shop,
+            "access_token": store_config.access_token,
+        })
     backend = create_backend(settings)
     async with ShopifyClient(backend, settings) as shopify:
         end = date.today()
