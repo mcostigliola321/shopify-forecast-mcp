@@ -169,7 +169,7 @@ Plans:
 **Depends on**: Phase 6 (or earlier — can start once Phase 4 MVP is stable; sequenced last so docs reflect final tool set)
 **Requirements**: R11.1, R11.2, R11.3, R11.4, R11.5, R12.1, R12.2, R12.3, R12.4, R12.5
 **Plans:** 5 plans, 3 waves
-- [ ] 07-01-PLAN.md — TimesFM PyPI-compatible dep swap (D-23) + Wave 0 test infrastructure + TOOLS.md generator (Wave 1, BLOCKING prerequisite for 02/03/04)
+- [x] 07-01-PLAN.md — TimesFM PyPI-compatible dep swap (D-23) + Wave 0 test infrastructure + TOOLS.md generator (Wave 1, BLOCKING prerequisite for 02/03/04)
 - [ ] 07-02-PLAN.md — `.github/workflows/publish.yml` (wait-for-ci + build + PyPI OIDC + multi-arch GHCR + GitHub Release with CHANGELOG body) (Wave 2)
 - [ ] 07-03-PLAN.md — Multistage Dockerfile + docker-entrypoint.sh + .dockerignore (Wave 2, parallel with 07-02)
 - [ ] 07-04-PLAN.md — Documentation suite: README rewrite, CHANGELOG [0.1.0], SETUP.md, ARCHITECTURE.md (3 mermaid diagrams), TOOLS.md (generated + enriched) (Wave 2, parallel with 07-02 + 07-03)
