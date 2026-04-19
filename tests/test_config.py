@@ -15,6 +15,8 @@ def _clear_env(monkeypatch):
         "SHOPIFY_FORECAST_FORECAST_CACHE_TTL",
         "SHOPIFY_FORECAST_LOG_LEVEL",
         "SHOPIFY_FORECAST_HF_HOME",
+        "SHOPIFY_FORECAST_STORES",
+        "SHOPIFY_FORECAST_DEFAULT_STORE",
     ]:
         monkeypatch.delenv(k, raising=False)
 
@@ -91,3 +93,21 @@ def test_case_insensitive(monkeypatch):
     monkeypatch.setenv("shopify_forecast_access_token", "shpat_x")
     s = Settings(_env_file=None)
     assert s.shop == "t.myshopify.com"
+
+
+def test_stores_defaults_empty(monkeypatch):
+    """Multi-store: stores defaults to empty list for backward compat."""
+    _clear_env(monkeypatch)
+    monkeypatch.setenv("SHOPIFY_FORECAST_SHOP", "t.myshopify.com")
+    s = Settings(_env_file=None)
+    assert s.stores == []
+    assert s.default_store is None
+
+
+def test_default_store_field(monkeypatch):
+    """Multi-store: default_store field can be set."""
+    _clear_env(monkeypatch)
+    monkeypatch.setenv("SHOPIFY_FORECAST_SHOP", "t.myshopify.com")
+    monkeypatch.setenv("SHOPIFY_FORECAST_DEFAULT_STORE", "t.myshopify.com")
+    s = Settings(_env_file=None)
+    assert s.default_store == "t.myshopify.com"

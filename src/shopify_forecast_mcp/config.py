@@ -8,8 +8,16 @@ from a local ``.env`` file). The access token is wrapped in
 
 from __future__ import annotations
 
-from pydantic import Field, SecretStr
+from pydantic import BaseModel, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class StoreConfig(BaseModel):
+    """Configuration for a single Shopify store."""
+
+    shop: str = Field(..., description="Store domain, e.g. mystore.myshopify.com")
+    access_token: SecretStr | None = Field(None, description="Admin API access token")
+    label: str | None = Field(None, description="Friendly name, e.g. 'US Store'")
 
 
 class Settings(BaseSettings):
@@ -48,6 +56,31 @@ class Settings(BaseSettings):
 
     # --- HuggingFace cache override ---
     hf_home: str | None = None
+
+    # --- Multi-store support (Phase 6) ---
+    # Claude Desktop config example for multi-store:
+    # {
+    #   "mcpServers": {
+    #     "shopify-forecast": {
+    #       "command": "uvx",
+    #       "args": ["shopify-forecast-mcp"],
+    #       "env": {
+    #         "SHOPIFY_FORECAST_SHOP": "us-store.myshopify.com",
+    #         "SHOPIFY_FORECAST_ACCESS_TOKEN": "shpat_xxx",
+    #         "SHOPIFY_FORECAST_STORES": "[{\"shop\":\"eu-store.myshopify.com\",\"access_token\":\"shpat_yyy\",\"label\":\"EU Store\"}]",
+    #         "SHOPIFY_FORECAST_DEFAULT_STORE": "us-store.myshopify.com"
+    #       }
+    #     }
+    #   }
+    # }
+    stores: list[StoreConfig] = Field(
+        default_factory=list,
+        description="Additional store configs for multi-store mode. JSON array.",
+    )
+    default_store: str | None = Field(
+        None,
+        description="Store domain or label to use when no store param provided",
+    )
 
 
 def get_settings() -> Settings:
