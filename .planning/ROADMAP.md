@@ -168,11 +168,12 @@ Plans:
 **Goal**: One-command install for merchants via `uvx`, Docker images on GHCR (lazy + bundled), and documentation that gets a new user clone-to-running in under 5 minutes.
 **Depends on**: Phase 6 (or earlier — can start once Phase 4 MVP is stable; sequenced last so docs reflect final tool set)
 **Requirements**: R11.1, R11.2, R11.3, R11.4, R11.5, R12.1, R12.2, R12.3, R12.4, R12.5
-**Plans**:
-1. **PyPI publishing** — GitHub Actions workflow using `uv publish` with Trusted Publisher OIDC, tag-triggered, builds wheel + sdist, tests on Python 3.11 first. Verify installability via `uvx shopify-forecast-mcp` from PyPI.
-2. **Docker images** — multistage `Dockerfile` on `python:3.12-slim` with `uv` from `ghcr.io/astral-sh/uv`, CPU torch. Two tags: `:latest` (lazy model download) and `:bundled` (TimesFM baked into a separate build stage at `/opt/hf-cache`). Publish to `ghcr.io/omnialta/shopify-forecast-mcp`. Skip npx wrapper — `uvx` is the equivalent.
-3. **README + SETUP + TOOLS + ARCHITECTURE** — `README.md` with one-liner, quick start, tools table, 3–4 conversation examples, architecture diagram, config, CLI usage, roadmap, license. `docs/SETUP.md` (custom app + token + scopes + env). `docs/TOOLS.md` (all 7 tools with schemas + example prompts + outputs). `docs/ARCHITECTURE.md` (two-layer design, data flow, key decisions including the research corrections). Claude Desktop config snippet using `uvx`.
-4. **Release cut** — tag v0.1.0, verify GH Actions pipeline end-to-end (test → build → publish PyPI + GHCR), smoke-test `uvx shopify-forecast-mcp` from a clean machine, announce.
+**Plans:** 5 plans, 3 waves
+- [ ] 07-01-PLAN.md — TimesFM PyPI-compatible dep swap (D-23) + Wave 0 test infrastructure + TOOLS.md generator (Wave 1, BLOCKING prerequisite for 02/03/04)
+- [ ] 07-02-PLAN.md — `.github/workflows/publish.yml` (wait-for-ci + build + PyPI OIDC + multi-arch GHCR + GitHub Release with CHANGELOG body) (Wave 2)
+- [ ] 07-03-PLAN.md — Multistage Dockerfile + docker-entrypoint.sh + .dockerignore (Wave 2, parallel with 07-02)
+- [ ] 07-04-PLAN.md — Documentation suite: README rewrite, CHANGELOG [0.1.0], SETUP.md, ARCHITECTURE.md (3 mermaid diagrams), TOOLS.md (generated + enriched) (Wave 2, parallel with 07-02 + 07-03)
+- [ ] 07-05-PLAN.md — Release runbook (docs/RELEASE.md) + v0.1.0-rc1 4-leg dry-run + v0.1.0 tag cut (Wave 3, depends on 07-02, 07-03, 07-04; has human-action checkpoints)
 
 **Success criteria**:
 - Fresh laptop, no prior Python setup → installs and runs via `uvx shopify-forecast-mcp` in under 5 minutes

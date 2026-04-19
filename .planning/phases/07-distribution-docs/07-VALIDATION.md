@@ -2,7 +2,7 @@
 phase: 7
 slug: distribution-docs
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-04-19
 ---
@@ -37,11 +37,24 @@ created: 2026-04-19
 
 ## Per-Task Verification Map
 
-*Planner fills this during plan generation — one row per task in every plan. Each row maps to a concrete automated check.*
+One row per task across Plans 01-05. Each row maps to a concrete automated check or — for manual-only verification — points to the rc1 checklist leg.
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| _(planner populates)_ | | | | | | | | | ⬜ pending |
+| 07-01-T1 | 01 | 1 | R12.1, R12.4 | T-07-01, T-07-07 | No direct URL in wheel METADATA; PyPI-uploadable | build+metadata | `uv build && uvx --from twine twine check dist/* && ! unzip -p dist/*.whl '*/METADATA' \| grep -q 'git+https' && unzip -p dist/*.whl '*/METADATA' \| grep -q 'timecopilot-timesfm' && uv run pytest -x -q` | pyproject.toml, uv.lock | ⬜ pending |
+| 07-01-T2 | 01 | 1 | R11.1-R11.4, R12.1-R12.4 | — | Wave 0 structural assertions available for downstream plans | pytest | `uv run pytest -x -q tests/test_workflow_structure.py tests/test_changelog_structure.py tests/test_dockerfile_structure.py tests/test_docs_completeness.py tests/test_claude_desktop_snippet.py` | tests/test_*.py (5 files) | ⬜ pending |
+| 07-01-T3 | 01 | 1 | R11.3 | — | TOOLS.md generator emits 7 tool sections | CLI + grep | `uv run python scripts/gen_tools_doc.py \| head -1 \| grep -q '^# MCP Tools Reference' && uv run python scripts/gen_tools_doc.py \| grep -c '^## \`' \| grep -q '7'` | scripts/gen_tools_doc.py | ⬜ pending |
+| 07-02-T1 | 02 | 2 | R12.1, R12.4 | T-07-02 | OIDC-only PyPI publish, no static tokens, CI gate | YAML parse + pytest | `python -c "import yaml,pathlib; d=yaml.safe_load(pathlib.Path('.github/workflows/publish.yml').read_text()); assert d['jobs']['publish-pypi']['permissions']['id-token']=='write'; assert d['jobs']['publish-pypi']['environment']['name']=='pypi'" && uv run pytest -x -q tests/test_workflow_structure.py -k "oidc or pypi or waits or no_static or tag"` | .github/workflows/publish.yml | ⬜ pending |
+| 07-02-T2 | 02 | 2 | R12.2, R12.3 | T-07-05 | Multi-arch Docker + rc/stable tag discrimination + release creation | YAML parse + pytest | `python -c "import yaml,pathlib; d=yaml.safe_load(pathlib.Path('.github/workflows/publish.yml').read_text()); need={'wait-for-ci','build','publish-pypi','publish-docker','create-release'}; assert set(d['jobs'])>=need; assert d['jobs']['publish-docker']['permissions']['packages']=='write'" && uv run pytest -x -q tests/test_workflow_structure.py` | .github/workflows/publish.yml | ⬜ pending |
+| 07-03-T1 | 03 | 2 | R12.2, R12.3 | T-07-11, T-07-12 | Non-root user, HF_HOME in both stages, JSON-array entrypoint | pytest + grep | `uv run pytest -x -q tests/test_dockerfile_structure.py -k "dockerfile and not entrypoint_script and not dockerignore"` | Dockerfile | ⬜ pending |
+| 07-03-T2 | 03 | 2 | R12.2 | T-07-05, T-07-13 | Entrypoint dispatches whitelist of verbs; exec for SIGTERM; .dockerignore excludes sensitive paths | bash lint + pytest | `bash -n docker-entrypoint.sh && test -x docker-entrypoint.sh && uv run pytest -x -q tests/test_dockerfile_structure.py -k "entrypoint_script or dispatches or exec or dockerignore"` | docker-entrypoint.sh, .dockerignore | ⬜ pending |
+| 07-04-T1 | 04 | 2 | R11.1, R11.5, D-21 | T-07-06 | README + CHANGELOG per D-16/D-21; no leaked credentials | pytest | `uv run pytest -x -q tests/test_docs_completeness.py::test_readme_exists tests/test_docs_completeness.py::test_readme_not_placeholder tests/test_docs_completeness.py::test_readme_has_alpha_banner tests/test_docs_completeness.py::test_readme_has_required_sections tests/test_docs_completeness.py::test_readme_shows_uvx_invocation tests/test_docs_completeness.py::test_readme_has_claude_desktop_snippet tests/test_changelog_structure.py tests/test_claude_desktop_snippet.py::test_readme_snippet_uses_uvx_command` | README.md, CHANGELOG.md, docs/images/.gitkeep | ⬜ pending |
+| 07-04-T2 | 04 | 2 | R11.2, R11.4 | T-07-06, T-07-16 | SETUP.md covers scopes + install paths + env vars + multi-store; ARCHITECTURE.md has 3 mermaid diagrams | pytest | `uv run pytest -x -q tests/test_docs_completeness.py::test_setup_md_exists tests/test_docs_completeness.py::test_setup_covers_required_scopes tests/test_docs_completeness.py::test_setup_covers_both_install_paths tests/test_docs_completeness.py::test_setup_has_env_var_table tests/test_docs_completeness.py::test_architecture_md_exists tests/test_docs_completeness.py::test_architecture_has_three_mermaid_diagrams tests/test_docs_completeness.py::test_architecture_mentions_dual_backend tests/test_claude_desktop_snippet.py::test_claude_desktop_snippet_is_valid_json` | docs/SETUP.md, docs/ARCHITECTURE.md | ⬜ pending |
+| 07-04-T3 | 04 | 2 | R11.3 | T-07-16, T-07-18 | TOOLS.md has 7 sections + sample prompts + example outputs | pytest + grep | `uv run pytest -x -q tests/test_docs_completeness.py::test_tools_md_exists tests/test_docs_completeness.py::test_tools_md_has_section_per_tool tests/test_docs_completeness.py::test_tools_md_has_per_tool_anchors tests/test_docs_completeness.py::test_no_placeholder_tokens_in_docs && test "$(grep -c '^## \`' docs/TOOLS.md)" = "7" && grep -q '### Sample prompts' docs/TOOLS.md && grep -q '### Example output' docs/TOOLS.md` | docs/TOOLS.md | ⬜ pending |
+| 07-05-T1 | 05 | 3 | R12.1-R12.4 | T-07-03, T-07-19 | Release runbook with prereqs + 4-leg + rollback | grep | `test -f docs/RELEASE.md && test "$(wc -l < docs/RELEASE.md)" -gt 100 && grep -q "Trusted Publisher" docs/RELEASE.md && grep -q "v0.1.0-rc1" docs/RELEASE.md && grep -q "4-leg verification" docs/RELEASE.md` | docs/RELEASE.md | ⬜ pending |
+| 07-05-T2 | 05 | 3 | R12.1 | T-07-02 | One-time PyPI + environment prereqs complete | **MANUAL** — rc1 checklist §"One-time prerequisites" legs 1-3 | manual; operator confirms in rc1 GitHub issue | — | ⬜ pending |
+| 07-05-T3 | 05 | 3 | R11.5, R12.1-R12.3 | T-07-03, T-07-20 | rc1 dry-run 4 legs all green | **MANUAL** — rc1 checklist §"4-leg verification" | manual; operator records in rc1 GitHub issue with stopwatch time | — | ⬜ pending |
+| 07-05-T4 | 05 | 3 | R11.5, R12.1-R12.5 | T-07-19, T-07-22 | v0.1.0 stable tag published; rc tags untouched; README banner retained | **MANUAL** + quick smoke | `curl -s https://pypi.org/pypi/shopify-forecast-mcp/json \| jq '.info.version'` returns `"0.1.0"`; `gh release list --limit 1` shows v0.1.0 without pre-release flag; manual checks per rc1 checklist | — | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -51,22 +64,21 @@ created: 2026-04-19
 
 From research §Validation Architecture — these infrastructure items MUST exist before downstream tasks can be verified:
 
-- [ ] `tests/test_docs_completeness.py` — asserts required H2 headings exist in README/SETUP/TOOLS/ARCHITECTURE, checks for placeholder tokens (`TODO`, `XXX`, `[date]`), validates internal link targets resolve (covers R11.1–R11.5)
-- [ ] `tests/test_workflow_structure.py` — YAML-parses `.github/workflows/publish.yml`, asserts `id-token: write`, asserts `packages: write`, asserts tag trigger pattern, asserts `waits-for-ci` gate step exists (covers R12.1, R12.4)
-- [ ] `tests/test_changelog_structure.py` — parses `CHANGELOG.md`, asserts Keep-a-Changelog format, asserts `[0.1.0]` section exists with Added subsection populated (covers D-21)
-- [ ] `tests/test_dockerfile_structure.py` — parses Dockerfile, asserts `python:3.11-slim` base, asserts multistage with model-bake stage conditional, asserts `HF_HOME=/opt/hf-cache` in final stage, asserts entrypoint points at `/app/entrypoint.sh` (covers R12.2, R12.3)
-- [ ] `scripts/gen_tools_doc.py` — generates `docs/TOOLS.md` per-tool sections from Pydantic models in `src/shopify_forecast_mcp/mcp/tools.py` (ensures TOOLS.md stays in sync with code; covers R11.3 + D-15)
-- [ ] Markdown lint: `markdownlint-cli2` via pre-commit hook (covers docs quality baseline)
-- [ ] Mermaid syntax validation: `@mermaid-js/mermaid-cli` smoke check on code blocks extracted from ARCHITECTURE.md (covers D-14)
-- [ ] Link check: `lycheeverse/lychee-action` in a scheduled/manual CI job (non-blocking alerts on doc link rot)
-
-*If any of these are missing when the planner generates tasks, the planner MUST create them as Wave 0 tasks before any downstream wave can be verified.*
+- [x] **Plan 01 Task 2 creates these:**
+  - `tests/test_docs_completeness.py` — asserts required H2 headings exist in README/SETUP/TOOLS/ARCHITECTURE, checks for placeholder tokens (`TODO`, `XXX`, `[date]`), validates internal link targets resolve (covers R11.1–R11.5)
+  - `tests/test_workflow_structure.py` — YAML-parses `.github/workflows/publish.yml`, asserts `id-token: write`, asserts `packages: write`, asserts tag trigger pattern, asserts `waits-for-ci` gate step exists (covers R12.1, R12.4)
+  - `tests/test_changelog_structure.py` — parses `CHANGELOG.md`, asserts Keep-a-Changelog format, asserts `[0.1.0]` section exists with Added subsection populated (covers D-21)
+  - `tests/test_dockerfile_structure.py` — parses Dockerfile, asserts `python:3.11-slim` base, asserts multistage with model-bake stage conditional, asserts `HF_HOME=/opt/hf-cache` in final stage, asserts entrypoint points at `/app/entrypoint.sh` (covers R12.2, R12.3)
+  - `tests/test_claude_desktop_snippet.py` — extracts and json-parses the Claude Desktop config snippet from README/SETUP.md
+- [x] **Plan 01 Task 3 creates:**
+  - `scripts/gen_tools_doc.py` — generates `docs/TOOLS.md` per-tool sections from Pydantic models in `src/shopify_forecast_mcp/mcp/tools.py` (ensures TOOLS.md stays in sync with code; covers R11.3 + D-15)
+- [ ] **Deferred to v0.2 (not blocking v0.1.0):** Markdown lint `markdownlint-cli2` pre-commit hook; Mermaid syntax validation via `@mermaid-js/mermaid-cli`; Link check via `lycheeverse/lychee-action`. These are quality baselines but not required for v0.1.0 per RESEARCH §Validation Architecture "Wave 0 Gaps".
 
 ---
 
 ## Manual-Only Verifications
 
-These behaviors cannot be validated in CI and require operator action — documented in the rc1 dry-run checklist:
+These behaviors cannot be validated in CI and require operator action — documented in the rc1 dry-run checklist (`docs/RELEASE.md` §"4-leg verification"):
 
 | Behavior | Requirement | Why Manual | Test Instructions |
 |----------|-------------|------------|-------------------|
@@ -82,12 +94,12 @@ These behaviors cannot be validated in CI and require operator action — docume
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references (test_docs_completeness.py, test_workflow_structure.py, test_changelog_structure.py, test_dockerfile_structure.py, scripts/gen_tools_doc.py)
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 90s for code/doc tasks (CI-dispatched workflow tasks exempt up to 5 min)
-- [ ] Manual verifications itemized in rc1 dry-run checklist (not just here)
-- [ ] `nyquist_compliant: true` set in frontmatter after planner fills the verification map
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies (manual-only tasks — 07-05-T2, T3, T4 — are explicitly flagged as MANUAL above with reference to the rc1 runbook)
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify (rc1 manual checkpoints in Plan 05 are separated by Task 1's automated `docs/RELEASE.md` check)
+- [x] Wave 0 covers all MISSING references (test_docs_completeness.py, test_workflow_structure.py, test_changelog_structure.py, test_dockerfile_structure.py, test_claude_desktop_snippet.py, scripts/gen_tools_doc.py)
+- [x] No watch-mode flags
+- [x] Feedback latency < 90s for code/doc tasks (CI-dispatched workflow tasks exempt up to 5 min)
+- [x] Manual verifications itemized in rc1 dry-run checklist (docs/RELEASE.md — created in Plan 05 Task 1)
+- [x] `nyquist_compliant: true` set in frontmatter after planner fills the verification map
 
-**Approval:** pending
+**Approval:** approved by planner 2026-04-19
