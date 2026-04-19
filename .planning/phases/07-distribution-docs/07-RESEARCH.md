@@ -872,32 +872,32 @@ These are appropriate for post-v0.1.0 supply-chain hardening once the project ha
 
 **Planner action on assumptions:** A2 is the critical one. Plan 1 must include a verification task: install `timecopilot-timesfm==0.2.1` in a throwaway venv, import `TimesFM_2p5_200M_torch`, run the existing forecaster test suite. Only proceed with publish pipeline after A2 validates green.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Does `uv publish` know to pin Python to 3.11 during the wheel metadata classification?**
    - What we know: `uv build` honors `requires-python = ">=3.11,<3.12"`; the built wheel is `py3-none-any` but PyPI will show Python version classifiers from the metadata.
    - What's unclear: Does `uvx shopify-forecast-mcp` on a Python 3.12-only machine fail cleanly with "no compatible Python"?
-   - Recommendation: document in README/SETUP that the package requires Python 3.11. Fallback: `uvx --python 3.11 shopify-forecast-mcp`. Verify during rc1 leg (c).
+   - RESOLVED: document in README/SETUP that the package requires Python 3.11. Fallback: `uvx --python 3.11 shopify-forecast-mcp`. Verify during rc1 leg (c).
 
 2. **Can we get native arm64 GitHub runners by v0.1.0 cut?**
    - What we know: Linux arm64 runners are in public availability as of Jan 2026 but may require explicit runner label (`ubuntu-24.04-arm`).
    - What's unclear: Whether the current repo's billing tier has access.
-   - Recommendation: Claude's discretion. If available, use native runners — 2-3× faster arm64 builds. Otherwise QEMU emulation (slower but works). Not a blocker; D-07 only requires correctness, not speed.
+   - RESOLVED: Claude's discretion. If available, use native runners — 2-3× faster arm64 builds. Otherwise QEMU emulation (slower but works). Not a blocker; D-07 only requires correctness, not speed.
 
 3. **Should we include `HEALTHCHECK` in the Dockerfile?**
    - What we know: D-17 discretion item; stdio MCP has no natural endpoint.
    - What's unclear: Whether user orchestrators (docker-compose, k8s) have expectations.
-   - Recommendation: omit for v0.1.0 (stdio MCPs aren't server-shaped). Revisit if streamable-http variant ships later.
+   - RESOLVED: omit for v0.1.0 (stdio MCPs aren't server-shaped). Revisit if streamable-http variant ships later.
 
 4. **What's the correct `uvx --prerelease=allow` invocation for MCP client configs?**
    - What we know: End users editing `claude_desktop_config.json` to install rc1 need prerelease flag.
    - What's unclear: Does `"args": ["--prerelease=allow", "shopify-forecast-mcp@0.1.0rc1"]` with `"command": "uvx"` work in Claude Desktop?
-   - Recommendation: Validate during rc1 leg (c) on fresh machine. Document the exact snippet in SETUP.md "Alpha pre-release installation" subsection.
+   - RESOLVED: Validate during rc1 leg (c) on fresh machine. Document the exact snippet in SETUP.md "Alpha pre-release installation" subsection.
 
 5. **Does `publish.yml` need to run on macOS at all?**
    - What we know: CI already runs macOS smoke. Publish workflow builds a pure-python wheel on Linux (sufficient).
    - What's unclear: Whether publishing from macOS would produce a different artifact.
-   - Recommendation: Linux-only publish (macOS is only in CI). Verified that the built wheel on macOS is identical `py3-none-any` to Linux.
+   - RESOLVED: Linux-only publish (macOS is only in CI). Verified that the built wheel on macOS is identical `py3-none-any` to Linux.
 
 ## Sources
 
