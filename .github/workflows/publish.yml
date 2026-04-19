@@ -117,12 +117,24 @@ jobs:
           name: dist
           path: dist/
 
+      - name: Check if version already on PyPI
+        id: pypi-check
+        run: |
+          version=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if curl -sf -o /dev/null "https://pypi.org/pypi/shopify-forecast-mcp/$version/json"; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "ℹ shopify-forecast-mcp $version already on PyPI — skipping upload (idempotent re-run)."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish to PyPI
+        if: steps.pypi-check.outputs.exists != 'true'
         # uv publish with no flags: auto-detects ACTIONS_ID_TOKEN_REQUEST_TOKEN
         # + the trusted-publisher config on PyPI, exchanges for a short-lived
         # upload token. PEP 440: v0.1.0-rc1 uploads as a pre-release automatically.
-        # --check-url: skip files already on PyPI so workflow re-runs are idempotent.
-        run: uv publish --check-url https://pypi.org/simple/
+        run: uv publish
 
   # Job 4: build + push multi-arch Docker images to GHCR.
   # Two variants (runtime-lazy, runtime-bundled) via job matrix.
