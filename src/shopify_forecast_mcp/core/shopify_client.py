@@ -250,6 +250,36 @@ query FetchProducts($after: String) {
 }
 """
 
+INVENTORY_QUERY = """\
+query FetchInventory($first: Int!, $after: String) {
+  productVariants(first: $first, after: $after) {
+    pageInfo { hasNextPage endCursor }
+    edges {
+      node {
+        id
+        sku
+        product { id title }
+        inventoryItem {
+          id
+          tracked
+          inventoryLevels(first: 10) {
+            edges {
+              node {
+                location { id name }
+                quantities(names: ["available"]) {
+                  name
+                  quantity
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
 COLLECTIONS_QUERY = """\
 query FetchCollections($after: String) {
   collections(first: 250, after: $after) {
@@ -484,6 +514,45 @@ class ShopifyClient:
             cursor = data["pageInfo"]["endCursor"]
 
         return products
+
+    async def fetch_inventory(self) -> list[dict]:
+        """Fetch inventory levels for all tracked variants.
+
+        Returns a list of dicts with variant_id, sku, product_id,
+        product_title, available, location_id, location_name.
+
+        Pagination safety limit: 100 pages x 250 = 25,000 variants (T-06-07).
+        """
+        inventory: list[dict] = []
+        cursor: str | None = None
+        for _ in range(100):  # Safety limit (T-06-07)
+            variables: dict[str, Any] = {"first": 250, "after": cursor}
+            result = await self._post_graphql(INVENTORY_QUERY, variables)
+            data = result["data"]["productVariants"]
+            for edge in data["edges"]:
+                node = edge["node"]
+                inv_item = node.get("inventoryItem", {})
+                if not inv_item.get("tracked", False):
+                    continue
+                for level_edge in inv_item.get("inventoryLevels", {}).get("edges", []):
+                    level = level_edge["node"]
+                    available = 0
+                    for q in level.get("quantities", []):
+                        if q["name"] == "available":
+                            available = q["quantity"]
+                    inventory.append({
+                        "variant_id": strip_gid(node["id"]),
+                        "sku": node.get("sku", ""),
+                        "product_id": strip_gid(node["product"]["id"]),
+                        "product_title": node["product"].get("title", ""),
+                        "available": available,
+                        "location_id": strip_gid(level["location"]["id"]),
+                        "location_name": level["location"].get("name", ""),
+                    })
+            if not data["pageInfo"]["hasNextPage"]:
+                break
+            cursor = data["pageInfo"]["endCursor"]
+        return inventory
 
     async def fetch_collections(self) -> list[dict]:
         """Fetch all collections via cursor pagination.
